@@ -408,3 +408,48 @@ navigateur piloté, où l'on ne peut pas poser de point d'arrêt.
 
 **Reste à faire :** essai sur un vrai téléphone (plein écran iOS, confort du
 zoom au doigt), et réglage éventuel des 11 cellules visibles.
+
+### Session 10 — 19/08/2026 (iPad, iPhone, rotation)
+Essais au navigateur piloté de 900×232 à 1280×757, sur ton signalement : flèches
+trop petites sur iPad en paysage, page coupée après rotation de l'iPhone.
+
+**Ce qui n'allait pas.** Sur iPad paysage, le D-pad tombait à 40 px de bouton
+alors qu'il restait 128 px de marge libre. Deux causes cumulées : `layoutTouch`
+plafonnait la croix à 190 px quoi qu'il arrive, et la marge latérale était
+elle-même étranglée parce que la scène gardait son 4:3, dont les côtés servent
+au HUD.
+
+**Corrections :**
+1. **La taille des commandes découle de la place disponible.** Le critère de
+   choix d'une disposition n'est plus « ai-je 108 px de bande ? » mais « quelle
+   taille de bouton cette disposition permet-elle ? » : chaque disposition
+   annonce la sienne, la première à atteindre 96 px l'emporte, et le bouton
+   prend toute la place trouvée, borné à 260 px. Le libellé de la bascule « W »
+   suit la même échelle.
+2. **Au tactile, la scène passe au carré même en paysage.** Le labyrinthe étant
+   bridé par la hauteur dans les deux formats, il ne perd pas un pixel, mais les
+   marges du 4:3 reviennent aux commandes. Le HUD part dans la barre du bas,
+   comme il le fait déjà en portrait.
+3. **Hauteur de page en `100dvh`.** `100 %` vaut sur iPhone la hauteur barres
+   rétractées : après une rotation, le bas de la page — barre d'outils comprise
+   — passait sous les barres de Safari.
+4. **L'encoche est déduite du placement.** La sonde `#safe-probe` livre au JS
+   les `env(safe-area-inset-*)` que seul le CSS connaît ; en paysage les
+   colonnes s'en écartent au lieu de glisser dessous, la barre d'état aussi.
+
+**Mesuré :** flèches de 40 → 81 px sur iPad paysage, 49 → 68 px sur iPhone
+paysage, portrait iPhone inchangé.
+
+**Piège d'outillage :** un service worker d'un autre jeu (le solitaire) squattait
+`localhost:8765` et servait *son* `ui.js`. Si une page se comporte de façon
+inexplicable en local, désinscrire les service workers du port avant tout autre
+diagnostic.
+
+**Reste à faire** — deux points que le navigateur piloté ne peut pas trancher,
+à confirmer sur les appareils :
+- le comportement des barres dynamiques de Safari après rotation (`100dvh`) ;
+- l'écart réel à l'encoche en paysage (vérifié avec une encoche simulée à 44 px
+  seulement).
+
+Puis, par ordre d'intérêt : réglage des 11 cellules visibles sur un 34×34 tenu
+en main, service worker hors ligne, retours sonores en jeu (`pop.wav`).
