@@ -76,10 +76,13 @@ function frame(now) {
   const compact = Boolean(playing && narrow);
   setViewport(compact ? 'jeu' : 'ecran');
 
-  // Les commandes tactiles vivent sous la scène : on la remonte pour leur
-  // laisser la place au lieu de la centrer entre deux bandes noires.
-  stage.verticalBias = game && ui.touchActive(game.screen) && ui.touchLayout === 'bande'
-    ? 0.14 : 0.5;
+  // En portrait les commandes vivent sous la scène : on leur réserve la place
+  // *avant* de dimensionner celle-ci, et on remonte la scène dans ce qui reste.
+  // En paysage elles tiennent dans les marges latérales, donc rien à réserver.
+  const touching = game && ui.touchActive(game.screen);
+  const portrait = innerHeight > innerWidth;
+  stage.reservedBottom = touching && portrait ? 200 : 0;
+  stage.verticalBias = touching && ui.touchLayout === 'bande' ? 0.14 : 0.5;
   stage.resize();
   const ctx = stage.begin();
 
@@ -143,6 +146,10 @@ async function boot() {
       ui.adopt(shared);
       game.setConfig(randomConfig(shared));
       game.start(shared.seed);
+      // ?niveau=N saute à un niveau donné : indispensable pour éprouver une
+      // grande grille sans devoir traverser les précédentes.
+      const level = Number(new URLSearchParams(location.search).get('niveau'));
+      if (level >= 2 && level <= game.config.levels.length) game.loadLevel(level - 1);
     } else {
       // Raccourci de développement : ?ecran=setup|pause|credits|… ouvre
       // directement l'écran voulu, ce qui rend les captures reproductibles.
@@ -155,6 +162,12 @@ async function boot() {
     document.getElementById('bar-info').textContent = error;
     console.error(err);
   }
+}
+
+// ?debug expose l'état interne : indispensable pour diagnostiquer depuis un
+// navigateur piloté, où l'on ne peut pas poser de point d'arrêt.
+if (new URLSearchParams(location.search).has('debug')) {
+  Object.defineProperty(window, 'mfa', { get: () => ({ game, ui, input, stage }) });
 }
 
 boot();

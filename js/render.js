@@ -76,6 +76,12 @@ export class Stage {
      * sous le jeu, là où se posent le D-pad et la bascule.
      */
     this.verticalBias = 0.5;
+    /**
+     * Hauteur, en pixels CSS, à laisser libre sous la scène. Sans cette
+     * réserve, une scène carrée occupe toute la hauteur et les commandes
+     * tactiles n'ont plus qu'à se poser par-dessus le labyrinthe.
+     */
+    this.reservedBottom = 0;
   }
 
   /** À rappeler au redimensionnement de la fenêtre ou au changement d'écran. */
@@ -89,9 +95,10 @@ export class Stage {
       this.canvas.height = h;
     }
     // On contient la scène plutôt que de la couvrir : rien n'est jamais rogné.
-    this.scale = Math.min(w / STAGE_W, h / STAGE_H);
+    const usable = Math.max(1, h - this.reservedBottom * dpr);
+    this.scale = Math.min(w / STAGE_W, usable / STAGE_H);
     this.offsetX = (w - STAGE_W * this.scale) / 2;
-    this.offsetY = (h - STAGE_H * this.scale) * this.verticalBias;
+    this.offsetY = (usable - STAGE_H * this.scale) * this.verticalBias;
   }
 
   /** Repart d'une scène propre, transformée en unités logiques. */

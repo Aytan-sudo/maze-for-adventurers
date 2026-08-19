@@ -363,3 +363,40 @@ et le cache de texture reste valable.
   demande CDP, pas `--dump-dom`.
 - **Prochaine action :** essais sur Chrome connecté (tactile réel, plein écran
   iOS, confort du zoom sur un 34×34).
+
+### Session 9 — 19/08/2026 (Chrome piloté)
+Premiers essais dans un vrai navigateur. Trois défauts trouvés, trois pièges
+d'outillage à ne pas réapprendre.
+
+**Défauts corrigés :**
+1. **La scène carrée mangeait la place des commandes.** En portrait elle
+   occupait toute la hauteur, ne laissant plus assez de bande : les commandes
+   basculaient en surimpression *par-dessus* le labyrinthe. `Stage` a désormais
+   `reservedBottom`, soustrait de la hauteur **avant** de dimensionner la scène.
+2. **`setPointerCapture` condamnait le D-pad entier.** Il était appelé avant
+   l'enregistrement de la direction ; quand il lève — ce qui arrive sur certains
+   pointeurs — le gestionnaire s'interrompait et le bouton restait inerte. La
+   direction est maintenant posée en premier, la capture tentée ensuite dans un
+   `try`, avec `pointerleave` en filet.
+3. **Une tape sèche était perdue.** Appui et relâchement dans la même image :
+   la boucle ne voyait jamais la direction. Le relâchement est différé de deux
+   images.
+
+**Pièges d'outillage :**
+- **Le cache des modules ES.** `python3 -m http.server` laisse le navigateur
+  réutiliser d'anciens modules : on corrige, on recharge, et c'est l'ancien code
+  qui tourne. D'où `tools/serve-dev.py`, qui interdit le cache. **Toujours
+  servir avec lui pendant les essais navigateur.**
+- **`requestAnimationFrame` ne tourne pas dans un onglet non rendu.** Mesuré :
+  0 image en 500 ms. La boucle de jeu est alors gelée et *tout* paraît cassé.
+  Avant de conclure qu'un déplacement ne marche pas, vérifier que les images
+  avancent (`game.timer` progresse).
+- **Ne jamais tester une direction sans vérifier qu'elle n'est pas murée.**
+  J'ai conclu deux fois à un bug en poussant le héros contre un mur.
+
+**Ajouts :** `?niveau=N` saute à un niveau, `?debug` expose `window.mfa`
+(`game`, `ui`, `input`, `stage`) — indispensable pour diagnostiquer depuis un
+navigateur piloté, où l'on ne peut pas poser de point d'arrêt.
+
+**Reste à faire :** essai sur un vrai téléphone (plein écran iOS, confort du
+zoom au doigt), et réglage éventuel des 11 cellules visibles.

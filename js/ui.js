@@ -160,18 +160,35 @@ export class Ui {
     for (const btn of this.touch.querySelectorAll('.dpad-btn')) {
       const dir = DIRS[Number(btn.dataset.dir)];
       btn.addEventListener('pointerdown', e => {
-        // La capture garantit de recevoir le relâchement même si le doigt a
-        // quitté le bouton entre-temps — sans quoi le héros part tout seul.
-        btn.setPointerCapture(e.pointerId);
+        // On enregistre la direction *avant* de tenter la capture : celle-ci
+        // n'est qu'un confort — recevoir le relâchement même si le doigt a
+        // quitté le bouton — et elle lève sur certains pointeurs. La faire
+        // passer en premier condamnait le D-pad entier à la moindre erreur.
         active.set(e.pointerId, dir);
         this.input.anyInteraction = true;
         apply();
         e.preventDefault();
+        try {
+          btn.setPointerCapture(e.pointerId);
+        } catch {
+          // Sans capture, un doigt qui glisse hors du bouton ne renverra pas
+          // son relâchement ; `pointerleave` prend alors le relais.
+        }
+      });
+      btn.addEventListener('pointerleave', e => {
+        if (btn.hasPointerCapture?.(e.pointerId)) return;
+        active.delete(e.pointerId);
+        apply();
       });
       for (const type of ['pointerup', 'pointercancel']) {
         btn.addEventListener(type, e => {
-          active.delete(e.pointerId);
-          apply();
+          // Le relâchement est différé de deux images : une tape sèche tient
+          // dans une seule image, et la boucle de jeu ne verrait jamais la
+          // direction. Deux images garantissent qu'un appui bref donne un pas.
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            active.delete(e.pointerId);
+            apply();
+          }));
         });
       }
     }

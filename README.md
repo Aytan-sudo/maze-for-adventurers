@@ -176,6 +176,7 @@ script d'extraction et chargé à la demande.
 | **Touches** | Flèches **ou ZQSD** pour se déplacer. `W` reste la marche lente, comme l'affiche l'écran de règles — ce qui **interdit WASD**. `Shift` est accepté en second choix, `M` coupe le son, `Échap` ou `P` met en pause. |
 | **Tactile** | D-pad et bascule « marcher lentement », posés dans la place que la scène 4:3 laisse autour d'elle (bande basse en portrait, bandes latérales en paysage) — jamais par-dessus le labyrinthe. La marche lente est une bascule, pas un maintien. |
 | **Deux formats de scène** | 480×360 pour les écrans (les images ont été dessinées pour ce 4:3), **360×360 pendant une partie sur écran étroit**. Le labyrinthe étant carré, il est bridé par la hauteur : supprimer les marges latérales lui rend 34 % de taille. Le HUD passe alors dans la barre du bas. |
+| **Caméra** | Au-delà de 11 cellules de large, la vue suit le héros ; une bascule « Vue d'ensemble » (bouton ou touche `V`) montre toute la grille. Sans zoom on garde la texture mémorisée, avec zoom on trace les murs directement — une texture assez fine pour ce grossissement pèserait des dizaines de Mo. |
 | **Icônes** | Engendrées par `tools/make-icons.mjs`, qui appelle le générateur du jeu avec une graine fixe : l'icône est littéralement un donjon du jeu. Encodeur PNG inclus, aucune dépendance. |
 | **Jet de survie** | Relancé **une seule fois par contact**, et réarmé quand le minotaure s'éloigne. L'original relançait le dé ~20 fois par seconde : même en marchant lentement, frôler un minotaure une seconde était mortel. |
 | **Cadences** | Héros 130 ms/case en courant, 320 en marche lente ; minotaure 220. Courir distance un minotaure, marcher lentement non — c'est ce qui donne son sel au choix, puisque seule la marche lente protège. |
@@ -310,8 +311,8 @@ node tools/check-rules.mjs
 # Régénérer les icônes
 node tools/make-icons.mjs
 
-# Servir en local
-python3 -m http.server 8000     # puis http://localhost:8000
+# Servir en local (sans cache — indispensable pour les essais navigateur)
+python3 tools/serve-dev.py 8765
 
 # Publier sur le hub (une fois le dépôt poussé et Pages actif)
 node ~/dev/python/Jeux_Pages/HUB/ajouter-jeu.mjs \
