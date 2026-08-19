@@ -6,10 +6,11 @@ import { loadAssets } from './assets.js';
 import { loadCampaign } from './maze.js';
 import { Input } from './input.js';
 import { AudioPlayer } from './audio.js';
-import { Game, MENU, SETUP, RULES, PLAY } from './screens.js';
+import { Game, MENU, SETUP, RULES, PLAY, PAUSE } from './screens.js';
 import { originalConfig, randomConfig, readUrl } from './config.js';
 import { Ui, shareUrl } from './ui.js';
-import { Stage, STAGE_W, STAGE_H, COLORS, drawText } from './render.js';
+import * as render from './render.js';
+import { Stage, COLORS, drawText, setViewport } from './render.js';
 
 const stage = new Stage(document.getElementById('stage'));
 const input = new Input();
@@ -58,6 +59,13 @@ function frame(now) {
   const dt = last ? Math.min(MAX_DT, now - last) : 0;
   last = now;
 
+  // Sur un écran étroit, la scène passe au carré le temps de la partie : le
+  // labyrinthe cesse d'être bridé par la largeur des marges du format 4:3.
+  const playing = game && (game.screen === PLAY || game.screen === PAUSE);
+  const narrow = innerWidth / Math.max(1, innerHeight) < 1.25;
+  const compact = Boolean(playing && narrow);
+  setViewport(compact ? 'jeu' : 'ecran');
+
   // Les commandes tactiles vivent sous la scène : on la remonte pour leur
   // laisser la place au lieu de la centrer entre deux bandes noires.
   stage.verticalBias = game && ui.touchActive(game.screen) && ui.touchLayout === 'bande'
@@ -72,7 +80,8 @@ function frame(now) {
   if (input.consume('m')) game.audio.toggleMute();
   while (ui.commands.length) runCommand(ui.commands.shift());
 
-  game.showKeyHints = !ui.touchActive(game.screen);
+  game.showKeyHints = !ui.touchActive(game.screen) && !compact;
+  game.showHud = !compact;
   game.update(dt, input);
   game.draw(ctx, stage.pixelsPerUnit);
   ui.sync(game.screen, { muted: game.audio.muted });
@@ -82,10 +91,10 @@ function frame(now) {
 
 function drawError(ctx, message) {
   ctx.fillStyle = COLORS.page;
-  ctx.fillRect(0, 0, STAGE_W, STAGE_H);
-  drawText(ctx, 'Erreur de chargement', STAGE_W / 2, STAGE_H / 2 - 10,
+  ctx.fillRect(0, 0, render.STAGE_W, render.STAGE_H);
+  drawText(ctx, 'Erreur de chargement', render.STAGE_W / 2, render.STAGE_H / 2 - 10,
     { size: 14, color: '#ff6b5e' });
-  drawText(ctx, message, STAGE_W / 2, STAGE_H / 2 + 10,
+  drawText(ctx, message, render.STAGE_W / 2, render.STAGE_H / 2 + 10,
     { size: 10, color: '#c9b8b0', weight: '400' });
 }
 

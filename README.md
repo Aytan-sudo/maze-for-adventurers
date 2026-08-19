@@ -1,7 +1,10 @@
 # Maze for Adventurers — portage navigateur
 
-Portage web du jeu Scratch **Maze for Adventurers** (Aymeric Cantais), destiné à
-GitHub Pages et au [hub de jeux](https://aytan-sudo.github.io/hub-gaming/).
+**▶ Jouer : <https://aytan-sudo.github.io/maze-for-adventurers/>**
+
+Portage web du jeu Scratch **Maze for Adventurers** (Aymeric Cantais), publié
+sur GitHub Pages et référencé sur le
+[hub de jeux](https://aytan-sudo.github.io/hub-gaming/).
 
 Le projet Scratch d'origine est conservé tel quel dans
 `Old_Scratch/Maze for Adventurers.sb3` — c'est la source de vérité pour tous les
@@ -172,6 +175,8 @@ script d'extraction et chargé à la demande.
 | **Build** | Aucun. Modules ES natifs, site statique. |
 | **Touches** | Flèches **ou ZQSD** pour se déplacer. `W` reste la marche lente, comme l'affiche l'écran de règles — ce qui **interdit WASD**. `Shift` est accepté en second choix, `M` coupe le son, `Échap` ou `P` met en pause. |
 | **Tactile** | D-pad et bascule « marcher lentement », posés dans la place que la scène 4:3 laisse autour d'elle (bande basse en portrait, bandes latérales en paysage) — jamais par-dessus le labyrinthe. La marche lente est une bascule, pas un maintien. |
+| **Deux formats de scène** | 480×360 pour les écrans (les images ont été dessinées pour ce 4:3), **360×360 pendant une partie sur écran étroit**. Le labyrinthe étant carré, il est bridé par la hauteur : supprimer les marges latérales lui rend 34 % de taille. Le HUD passe alors dans la barre du bas. |
+| **Icônes** | Engendrées par `tools/make-icons.mjs`, qui appelle le générateur du jeu avec une graine fixe : l'icône est littéralement un donjon du jeu. Encodeur PNG inclus, aucune dépendance. |
 | **Jet de survie** | Relancé **une seule fois par contact**, et réarmé quand le minotaure s'éloigne. L'original relançait le dé ~20 fois par seconde : même en marchant lentement, frôler un minotaure une seconde était mortel. |
 | **Cadences** | Héros 130 ms/case en courant, 320 en marche lente ; minotaure 220. Courir distance un minotaure, marcher lentement non — c'est ce qui donne son sel au choix, puisque seule la marche lente protège. |
 | **Minotaures** | Marche aléatoire sans demi-tour immédiat (sauf en impasse) : ils patrouillent au lieu de trembler sur place. Ils n'apparaissent jamais à moins de `max(3, n/4)` cases du héros. |
@@ -255,9 +260,11 @@ Maze_For_Adventurers/
 │   └── audio/                   ← 5 sons ré-encodés
 ├── css/
 │   └── style.css
+├── manifest.webmanifest
 ├── tools/
 │   ├── extract-sb3.mjs      régénère assets/ depuis le .sb3
-│   └── check-rules.mjs      simule des parties en Node, sans navigateur
+│   ├── check-rules.mjs      simule des parties en Node, sans navigateur
+│   └── make-icons.mjs       engendre les icônes (encodeur PNG inclus)
 └── js/
     ├── main.js       amorçage, boucle rAF, redimensionnement
     ├── rng.js        PRNG semé (mulberry32) + hachage de graine
@@ -299,6 +306,9 @@ node tools/extract-sb3.mjs
 
 # Vérifier les règles du jeu (traversées simulées, murs, jets de dé)
 node tools/check-rules.mjs
+
+# Régénérer les icônes
+node tools/make-icons.mjs
 
 # Servir en local
 python3 -m http.server 8000     # puis http://localhost:8000

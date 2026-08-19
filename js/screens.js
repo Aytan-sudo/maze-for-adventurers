@@ -37,6 +37,8 @@ export class Game {
     this.seed = null;
     /** Faux quand les commandes tactiles rendent le rappel clavier inutile. */
     this.showKeyHints = true;
+    /** Faux en scène carrée : il n'y a plus de marge où poser le HUD. */
+    this.showHud = true;
   }
 
   /* ── Transitions ───────────────────────────────────────────────────── */
@@ -245,7 +247,7 @@ export class Game {
     const hero = cellCenter(n, level.hero.fi, level.hero.fj);
     drawSprite(ctx, this.assets.img('hero'), hero.x, hero.y, size);
 
-    this.drawHud(ctx);
+    if (this.showHud) this.drawHud(ctx);
   }
 
   /**

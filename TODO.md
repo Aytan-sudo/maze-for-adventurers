@@ -4,7 +4,11 @@
 > Les décisions figées et les données extraites du `.sb3` sont dans `README.md` :
 > pas besoin de ré-analyser le projet Scratch.
 
-État global : **étape 6 à démarrer** — 5 / 6 étapes terminées.
+État global : **jeu publié et sur le hub** — 6 / 6 étapes terminées.
+
+- Jeu : <https://aytan-sudo.github.io/maze-for-adventurers/>
+- Dépôt : <https://github.com/Aytan-sudo/maze-for-adventurers>
+- Hub : <https://aytan-sudo.github.io/hub-gaming/>
 
 ---
 
@@ -166,11 +170,9 @@ décision, pas seulement du code :
 Les points 2 à 5 sont traités depuis l'étape 5. **Le point 1 reste ouvert** et
 mérite d'être essayé sur un vrai téléphone avant de choisir.
 
-Un gain simple s'y ajoute, non fait : pendant une partie sur écran étroit, les
-marges latérales de la scène (70 unités de chaque côté, soit 29 % de la largeur)
-n'accueillent que le HUD. Les déplacer dans la barre du bas laisserait le
-labyrinthe occuper toute la largeur — près d'un tiers de cellule gagné sans
-toucher au reste.
+Le point 1 s'est allégé depuis : la scène carrée sur écran étroit rend un tiers
+de largeur au labyrinthe (voir « Suite » plus bas), ce qui repousse le seuil où
+la lisibilité devient un problème sans le supprimer.
 
 ---
 
@@ -219,15 +221,60 @@ il rend les captures reproductibles.
 
 ---
 
-## Étape 6 — Publication
+## Étape 6 — Publication ✅ TERMINÉE
 
-- [ ] `manifest.webmanifest` + icônes
-- [ ] `git init`, premier commit
-- [ ] Dépôt `Aytan-sudo/maze-for-adventurers`, push
-- [ ] Activer GitHub Pages, vérifier que le jeu tourne en ligne
-- [ ] `node ~/dev/python/Jeux_Pages/HUB/ajouter-jeu.mjs` avec description et tags
+- [x] `manifest.webmanifest` + icônes (32, 180, 192, 512)
+- [x] `git init`, premier commit
+- [x] Dépôt public `Aytan-sudo/maze-for-adventurers`, push
+- [x] GitHub Pages activé, jeu vérifié en ligne
+- [x] Ajouté au hub (6ᵉ jeu)
+
+**Les icônes sont engendrées, pas dessinées.** `tools/make-icons.mjs` appelle le
+générateur du jeu avec la graine fixe `maze-for-adventurers` et rastérise un
+labyrinthe 7×7 avec le trésor au centre. L'encodeur PNG est écrit dans le
+script : les murs ne sont que des rectangles, il n'y avait rien à demander à une
+bibliothèque. Aucune dépendance, aucun outil externe, résultat reproductible.
+
+**Vérification en ligne :** les onze ressources clés répondent en 200 avec le
+bon type MIME (WebP, MP3, `application/manifest+json`), et une capture de
+`?graine=…&taille=grand&difficulte=normal` montre le donjon partagé jouable.
+
+**Le hub charge ses jeux depuis `jeux.json` à l'exécution**, pas depuis le HTML :
+chercher le jeu dans `index.html` ne donne rien, c'est normal. Vérifier
+`https://aytan-sudo.github.io/hub-gaming/jeux.json`.
 
 ---
+
+## Suite — scène carrée sur écran étroit ✅ FAITE
+
+Le gain repéré à l'étape 5 s'est révélé bien plus important que prévu. Le
+labyrinthe est carré : il est bridé par la **hauteur**, pas par la largeur.
+Élargir le carré de jeu dans une scène 4:3 n'aurait rien donné ; c'est la scène
+elle-même qui devait changer de format.
+
+Pendant une partie sur écran étroit (`largeur / hauteur < 1,25`), la scène passe
+donc de 480×360 à **360×360** et le HUD s'en va dans la barre du bas. Sur un
+téléphone de 500 px, le labyrinthe passe de ~355 à ~475 px : **+34 %**.
+
+`render.js` expose `STAGE_W`, `STAGE_H` et `MAZE_BOX` en `let` avec un
+`setViewport(mode)` : les liaisons de module étant vivantes, tous les
+importateurs suivent sans câblage. Le carré de jeu garde ses 340 unités de côté
+dans les deux formats, donc les tailles de cellule restent celles de l'original
+et le cache de texture reste valable.
+
+---
+
+## Reste ouvert
+
+1. **Lisibilité des très grandes grilles au tactile.** La scène carrée a bien
+   amélioré les choses (un 34×34 sur téléphone passe de ~10 à ~14 px par
+   cellule) mais reste juste. Caméra qui suit le héros, plafonnement de la
+   taille selon l'écran, ou vue d'ensemble sur appui long — **à essayer sur un
+   vrai téléphone avant de choisir**.
+2. **Service worker** pour jouer hors ligne, une fois les 5 Mo d'audio en cache.
+3. **Sons de jeu** : `pop.wav` est extrait mais inutilisé. L'original ne s'en
+   servait pas non plus, mais un retour sonore sur un pas bloqué ou une
+   rencontre serait un vrai plus.
 
 ## Journal des sessions
 
@@ -292,3 +339,11 @@ il rend les captures reproductibles.
 - **Prochaine action :** étape 6, la publication. `manifest.webmanifest` et
   icônes, `git init`, dépôt `Aytan-sudo/maze-for-adventurers`, GitHub Pages,
   puis `node ~/dev/python/Jeux_Pages/HUB/ajouter-jeu.mjs`.
+
+### Session 7 — 19/08/2026
+- Étape 6 terminée : icônes engendrées, manifeste, dépôt public, Pages, hub.
+- Suite : scène carrée pendant les parties sur écran étroit (+34 % de
+  labyrinthe), HUD reporté dans la barre du bas.
+- **Prochaines pistes**, par ordre d'intérêt : essayer un 34×34 sur un vrai
+  téléphone pour trancher la question de la caméra ; service worker ; retours
+  sonores en jeu.

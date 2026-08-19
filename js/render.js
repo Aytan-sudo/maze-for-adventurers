@@ -9,15 +9,29 @@
 
 import { NORTH, EAST, SOUTH, WEST } from './maze.js';
 
-export const STAGE_W = 480, STAGE_H = 360;
-
 /**
- * Le carré de jeu, aux mêmes coordonnées que dans le Scratch d'origine : le
- * tracé y occupait 340 unités centrées sur la scène. Conserver ces valeurs fait
- * que les tailles de cellule retombent exactement sur celles de l'original
- * (34, 20 et 10 unités pour les grilles 10×10, 17×17 et 34×34).
+ * La scène a deux formats, et les liaisons de module étant vivantes, il suffit
+ * de réaffecter ces variables pour que tout le rendu suive.
+ *
+ * - `ecran` : 480 × 360, le format 4:3 de Scratch. Les images d'écran ont été
+ *   dessinées pour lui, et les marges latérales accueillent le HUD.
+ * - `jeu` : 360 × 360. Le labyrinthe étant carré, il est bridé par la hauteur ;
+ *   sur un écran étroit, supprimer les marges latérales lui rend un tiers de
+ *   taille. Le HUD passe alors dans la barre du bas.
+ *
+ * Dans les deux cas le carré de jeu garde ses 340 unités de côté, si bien que
+ * les cellules retombent exactement sur les tailles d'origine (34, 20 et 10
+ * unités pour les grilles 10×10, 17×17 et 34×34).
  */
-export const MAZE_BOX = { x: 70, y: 10, size: 340 };
+export let STAGE_W = 480, STAGE_H = 360;
+export let MAZE_BOX = { x: 70, y: 10, size: 340 };
+
+export function setViewport(mode) {
+  const game = mode === 'jeu';
+  STAGE_W = game ? 360 : 480;
+  STAGE_H = 360;
+  MAZE_BOX = { x: (STAGE_W - 340) / 2, y: 10, size: 340 };
+}
 
 /** Les sprites d'origine occupaient tous ~72 % de la largeur d'une cellule. */
 export const SPRITE_SCALE = 0.72;
