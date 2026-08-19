@@ -14,8 +14,8 @@
 import { Level, SPEEDS } from './level.js';
 import { Rng } from './rng.js';
 import {
-  STAGE_W, STAGE_H, drawMaze, drawSprite, drawBackdrop, drawText, drawBanner,
-  cellCenter, cellSize, SPRITE_SCALE, COLORS,
+  STAGE_W, STAGE_H, drawMaze, drawMazeWalls, drawSprite, drawBackdrop, drawText,
+  drawBanner, cellCenter, cellSize, applyCamera, zoomFor, SPRITE_SCALE, COLORS,
 } from './render.js';
 
 export const MENU = 'menu', SETUP = 'setup', RULES = 'rules', PLAY = 'play',
@@ -39,6 +39,8 @@ export class Game {
     this.showKeyHints = true;
     /** Faux en scène carrée : il n'y a plus de marge où poser le HUD. */
     this.showHud = true;
+    /** Vue d'ensemble : tout le labyrinthe, au prix de cellules minuscules. */
+    this.overview = false;
   }
 
   /* ── Transitions ───────────────────────────────────────────────────── */
@@ -227,13 +229,25 @@ export class Game {
     }
   }
 
+  /** Vrai si la grille est trop grande pour être lue d'un coup d'œil. */
+  get zoomable() {
+    return this.level ? zoomFor(this.level.maze.n) > 1 : false;
+  }
+
   drawLevel(ctx, pixelsPerUnit) {
     const level = this.level;
     const n = level.maze.n;
-    const cell = cellSize(n);
-    const size = cell * SPRITE_SCALE;
+    const size = cellSize(n) * SPRITE_SCALE;
+    const zoom = this.overview ? 1 : zoomFor(n);
 
-    drawMaze(ctx, level.maze, pixelsPerUnit);
+    ctx.save();
+    const range = applyCamera(ctx, level.maze, level.hero.fi, level.hero.fj, zoom);
+
+    // Sans zoom, la texture mémorisée évite de retracer des milliers de
+    // segments ; avec, seule une centaine est visible et le tracé direct reste
+    // net quel que soit le grossissement.
+    if (zoom > 1) drawMazeWalls(ctx, level.maze, range);
+    else drawMaze(ctx, level.maze, pixelsPerUnit);
 
     const exit = cellCenter(n, level.exit.i, level.exit.j);
     drawSprite(ctx, this.assets.img(level.exitKind === 'treasure' ? 'treasure' : 'stairs'),
@@ -246,6 +260,7 @@ export class Game {
 
     const hero = cellCenter(n, level.hero.fi, level.hero.fj);
     drawSprite(ctx, this.assets.img('hero'), hero.x, hero.y, size);
+    ctx.restore();
 
     if (this.showHud) this.drawHud(ctx);
   }

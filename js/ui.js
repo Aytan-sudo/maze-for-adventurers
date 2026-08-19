@@ -55,6 +55,12 @@ export class Ui {
     this.touchLayout = 'bande';
     addEventListener('touchstart', () => { this.hasTouch = true; }, { once: true, passive: true });
 
+    const fullscreen = document.querySelector('[data-action="pleinecran"]');
+    fullscreen.hidden = !FULLSCREEN_SUPPORTED;
+    addEventListener('fullscreenchange', () => {
+      fullscreen.textContent = document.fullscreenElement ? 'Quitter' : 'Plein écran';
+    });
+
     this.wireActions();
     this.wireTouch();
     this.refresh();
@@ -128,6 +134,7 @@ export class Ui {
       const action = e.target.closest('[data-action]')?.dataset.action;
       if (!action) return;
       if (action === 'pleinecran') return toggleFullscreen();
+      if (action === 'installer') return;
       if (action === 'commencer') return this.input.pressVirtualConfirm();
       this.commands.push({ type: action });
     };
@@ -209,6 +216,12 @@ export class Ui {
     const sound = document.querySelector('[data-action="son"]');
     sound.textContent = state.muted ? 'Son coupé' : 'Son';
     sound.setAttribute('aria-pressed', String(state.muted));
+
+    const view = document.querySelector('[data-action="vue"]');
+    // Sur une petite grille tout tient déjà : le bouton n'aurait rien à faire.
+    view.hidden = !(state.zoomable && (screen === PLAY || screen === PAUSE));
+    view.textContent = state.overview ? 'Vue rapprochée' : 'Vue d\'ensemble';
+    view.setAttribute('aria-pressed', String(state.overview));
   }
 
   /** L'écran de règles d'origine parle de flèches : au tactile, c'est faux. */
@@ -247,27 +260,37 @@ export class Ui {
       // hauteur restante mettrait les boutons au milieu du vide.
       const height = Math.min(below, 230);
       box = { left: rect.left, top: app.height - height, width: rect.width, height };
-      pad = Math.min(132, height - 18, rect.width * 0.3);
+      pad = Math.min(190, height - 12, rect.width * 0.42);
     } else if (side >= TOUCH_COLUMN) {
       this.touchLayout = 'colonnes';
       box = { left: 0, top: rect.top, width: app.width, height: rect.height };
-      pad = Math.min(132, side - 14, rect.height * 0.42);
+      pad = Math.min(190, side - 10, rect.height * 0.5);
     } else {
       this.touchLayout = 'surimpression';
       const height = Math.min(TOUCH_BAND + 20, rect.height * 0.34);
       box = { left: rect.left, top: rect.top + rect.height - height, width: rect.width, height };
-      pad = Math.min(110, height - 14, rect.width * 0.26);
+      pad = Math.min(140, height - 10, rect.width * 0.32);
     }
 
     this.touch.dataset.layout = this.touchLayout;
     this.place(this.touch, box);
-    this.touch.style.setProperty('--pad', `${Math.max(52, pad)}px`);
+    this.touch.style.setProperty('--pad', `${Math.max(96, pad)}px`);
   }
 }
 
+/**
+ * iOS ne propose l'API plein écran que sur les vidéos : le bouton y resterait
+ * sans effet visible. On le masque plutôt que de laisser croire à une panne —
+ * sur iPhone, c'est « Ajouter à l'écran d'accueil » qui enlève les barres, ce
+ * que le manifeste et les balises `apple-mobile-web-app-*` prennent en charge.
+ */
+const FULLSCREEN_SUPPORTED = typeof document.documentElement.requestFullscreen === 'function'
+  && (document.fullscreenEnabled ?? true);
+
 function toggleFullscreen() {
+  if (!FULLSCREEN_SUPPORTED) return;
   if (document.fullscreenElement) document.exitFullscreen();
-  else document.documentElement.requestFullscreen?.().catch(() => {});
+  else document.documentElement.requestFullscreen().catch(() => {});
 }
 
 /** Reflète la partie en cours dans la barre d'adresse, pour la partager. */

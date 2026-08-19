@@ -53,6 +53,9 @@ function runCommand(cmd) {
     case 'pause':
       game.goto(game.screen === PAUSE ? PLAY : PAUSE);
       break;
+    case 'vue':
+      game.overview = !game.overview;
+      break;
     case 'rejouer':
       if (game.config.meta?.mode === 'campagne') game.start();
       else game.restart();
@@ -85,13 +88,18 @@ function frame(now) {
 
   if (input.anyInteraction) game.audio.unlock();
   if (input.consume('m')) game.audio.toggleMute();
+  if (input.consume('v')) game.overview = !game.overview;
   while (ui.commands.length) runCommand(ui.commands.shift());
 
   game.showKeyHints = !ui.touchActive(game.screen) && !compact;
   game.showHud = !compact;
   game.update(dt, input);
   game.draw(ctx, stage.pixelsPerUnit);
-  ui.sync(game.screen, { muted: game.audio.muted });
+  ui.sync(game.screen, {
+    muted: game.audio.muted,
+    overview: game.overview,
+    zoomable: game.zoomable,
+  });
   input.endFrame();
   updateBar();
 }

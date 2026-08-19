@@ -266,11 +266,11 @@ et le cache de texture reste valable.
 
 ## Reste ouvert
 
-1. **Lisibilité des très grandes grilles au tactile.** La scène carrée a bien
-   amélioré les choses (un 34×34 sur téléphone passe de ~10 à ~14 px par
-   cellule) mais reste juste. Caméra qui suit le héros, plafonnement de la
-   taille selon l'écran, ou vue d'ensemble sur appui long — **à essayer sur un
-   vrai téléphone avant de choisir**.
+1. ~~Lisibilité des très grandes grilles au tactile~~ **✅ tranché** : caméra qui
+   suit le héros (11 cellules visibles en largeur) plus une bascule « Vue
+   d'ensemble » dans la barre, aussi accessible par la touche `V`. Sans zoom on
+   garde la texture mémorisée ; avec zoom on trace les murs directement, car
+   une texture assez fine pour ce grossissement pèserait des dizaines de Mo.
 2. **Service worker** pour jouer hors ligne, une fois les 5 Mo d'audio en cache.
 3. **Sons de jeu** : `pop.wav` est extrait mais inutilisé. L'original ne s'en
    servait pas non plus, mais un retour sonore sur un pas bloqué ou une
@@ -347,3 +347,19 @@ et le cache de texture reste valable.
 - **Prochaines pistes**, par ordre d'intérêt : essayer un 34×34 sur un vrai
   téléphone pour trancher la question de la caméra ; service worker ; retours
   sonores en jeu.
+
+### Session 8 — 19/08/2026
+- Boutons `Son` et `Pause` réparés : ils déclaraient une action que
+  `runCommand` ne traitait pas. Garde-fou ajouté dans `check-rules.mjs`.
+- Icône : minotaure sur labyrinthe estompé (alpha reconstruit depuis le canal
+  vert, le sprite étant bicolore et opaque). Favicone 32 px : labyrinthe seul.
+- Caméra et bascule « Vue d'ensemble » (touche `V`).
+- D-pad nettement agrandi (plancher à 96 px, plafond 190).
+- Plein écran masqué là où l'API n'existe pas (iOS) ; balises
+  `apple-mobile-web-app-*` ajoutées pour l'écran d'accueil.
+- **Piège outillage :** sous `--dump-dom`, Chrome ne compose presque pas et
+  `requestAnimationFrame` ne tourne que ~2 fois : la boucle de jeu n'avance
+  pas et tout test d'interaction échoue silencieusement. Un vrai test de clics
+  demande CDP, pas `--dump-dom`.
+- **Prochaine action :** essais sur Chrome connecté (tactile réel, plein écran
+  iOS, confort du zoom sur un 34×34).

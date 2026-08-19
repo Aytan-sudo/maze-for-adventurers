@@ -7,6 +7,11 @@
 <meta name="description" content="Traversez les labyrinthes, esquivez les minotaures, trouvez le trésor.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#14110f">
+<!-- iOS ignore l'API plein écran : c'est l'ajout à l'écran d'accueil qui
+     donne l'affichage sans barres du navigateur. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Maze">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="assets/icons/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
@@ -111,6 +116,7 @@
   <div id="bar">
     <span id="bar-info">chargement…</span>
     <span class="bar-tools">
+      <button type="button" class="tool" data-action="vue" title="Vue d'ensemble (V)" hidden>Vue</button>
       <button type="button" class="tool" data-action="pause" title="Pause (Échap)" hidden>Pause</button>
       <button type="button" class="tool" data-action="son" title="Couper le son (M)">Son</button>
       <button type="button" class="tool" data-action="pleinecran" title="Plein écran">Plein écran</button>

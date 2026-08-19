@@ -275,3 +275,118 @@ export function drawBanner(ctx, y, height, alpha = 0.62) {
   ctx.fillRect(0, y, STAGE_W, height);
   ctx.restore();
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Caméra
+ *
+ * Sur une grande grille, tout afficher rend les cellules illisibles : un 34×34
+ * sur téléphone tombe sous 15 px par cellule. La vue rapprochée suit le héros
+ * et garde une taille de cellule confortable ; la vue d'ensemble reste
+ * accessible d'un bouton, car c'est elle qui permet de choisir son chemin.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Nombre de cellules visibles en largeur, en vue rapprochée. */
+export const ZOOM_CELLS = 11;
+
+/** 1 signifie « tout tient déjà », donc pas de zoom. */
+export function zoomFor(n) {
+  return Math.max(1, n / ZOOM_CELLS);
+}
+
+const clamp = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
+
+/**
+ * Découpe au carré de jeu, puis cadre sur (fi, fj) si l'on zoome.
+ * L'appelant doit avoir fait `ctx.save()`.
+ * @returns {{i0, i1, j0, j1}} plage de cellules à dessiner
+ */
+export function applyCamera(ctx, maze, fi, fj, zoom) {
+  const box = MAZE_BOX;
+  const n = maze.n;
+
+  // Le découpage se pose en coordonnées de scène, donc avant la mise à
+  // l'échelle, sinon la vue zoomée déborderait sur les marges du HUD.
+  ctx.beginPath();
+  ctx.rect(box.x, box.y, box.size, box.size);
+  ctx.clip();
+
+  if (zoom <= 1) return { i0: 0, i1: n, j0: 0, j1: n };
+
+  const cell = cellSize(n);
+  const half = box.size / (2 * zoom);
+  // Le cadrage se bloque aux bords : suivre le héros jusque dans un coin
+  // montrerait du vide hors du labyrinthe.
+  const fx = clamp(box.x + (fi + 0.5) * cell, box.x + half, box.x + box.size - half);
+  const fy = clamp(box.y + (fj + 0.5) * cell, box.y + half, box.y + box.size - half);
+
+  ctx.translate(box.x + box.size / 2, box.y + box.size / 2);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-fx, -fy);
+
+  const margin = 1;
+  return {
+    i0: Math.max(0, Math.floor((fx - half - box.x) / cell) - margin),
+    i1: Math.min(n, Math.ceil((fx + half - box.x) / cell) + margin),
+    j0: Math.max(0, Math.floor((fy - half - box.y) / cell) - margin),
+    j1: Math.min(n, Math.ceil((fy + half - box.y) / cell) + margin),
+  };
+}
+
+/**
+ * Trace les murs directement, sans passer par la texture.
+ *
+ * En vue rapprochée la texture ne convient plus : à ce grossissement il
+ * faudrait la produire à plusieurs milliers de pixels de côté — des dizaines de
+ * mégaoctets — pour rester nette. Seule une centaine de segments est visible,
+ * autant les tracer à chaque image : c'est peu coûteux et parfaitement net.
+ */
+export function drawMazeWalls(ctx, maze, range) {
+  const n = maze.n;
+  const cell = cellSize(n);
+  const at = k => MAZE_BOX.x + k * cell;
+  const to = k => MAZE_BOX.y + k * cell;
+
+  ctx.fillStyle = COLORS.floor;
+  ctx.fillRect(MAZE_BOX.x, MAZE_BOX.y, MAZE_BOX.size, MAZE_BOX.size);
+
+  ctx.strokeStyle = COLORS.wall;
+  ctx.lineWidth = wallWidth(n);
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'miter';
+
+  const path = new Path2D();
+  const { i0, i1, j0, j1 } = range;
+
+  // Même fusion des segments alignés que pour la texture : des traits accolés
+  // laisseraient des encoches aux angles.
+  for (let j = j0; j <= j1; j++) {
+    let start = -1;
+    for (let i = i0; i <= i1; i++) {
+      const wall = i < n && j <= n
+        && (j === n ? maze.hasWall(i, n - 1, SOUTH) : maze.hasWall(i, j, NORTH));
+      if (wall && start < 0) start = i;
+      if (!wall && start >= 0) {
+        path.moveTo(at(start), to(j));
+        path.lineTo(at(i), to(j));
+        start = -1;
+      }
+    }
+    if (start >= 0) { path.moveTo(at(start), to(j)); path.lineTo(at(i1), to(j)); }
+  }
+  for (let i = i0; i <= i1; i++) {
+    let start = -1;
+    for (let j = j0; j <= j1; j++) {
+      const wall = j < n && i <= n
+        && (i === n ? maze.hasWall(n - 1, j, EAST) : maze.hasWall(i, j, WEST));
+      if (wall && start < 0) start = j;
+      if (!wall && start >= 0) {
+        path.moveTo(at(i), to(start));
+        path.lineTo(at(i), to(j));
+        start = -1;
+      }
+    }
+    if (start >= 0) { path.moveTo(at(i), to(start)); path.lineTo(at(i), to(j1)); }
+  }
+
+  ctx.stroke(path);
+}
