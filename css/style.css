@@ -1,0 +1,335 @@
+/* Mise en page : le canevas occupe tout ce qui reste et gère lui-même ses
+   bandes noires. La surcouche HTML est calée sur le cadre du jeu par
+   Stage.cssRect, pour ne jamais déborder sur les bandes. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #14110f;
+  color: #e8e2d8;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  overscroll-behavior: none;
+}
+
+body { display: flex; flex-direction: column; }
+
+#app { flex: 1; min-height: 0; display: flex; position: relative; }
+
+#stage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* ── Surcouche ──────────────────────────────────────────────────────── */
+
+#overlay {
+  position: absolute;
+  display: flex;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#overlay[hidden] { display: none; }
+
+/* Seuls les panneaux captent la souris : ailleurs, les clics passent au jeu. */
+.panel { pointer-events: auto; }
+.panel[hidden] { display: none; }
+
+.panel--bottom {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 2.2rem 0.6rem 0.7rem;
+  /* Le bandeau se dégrade au lieu de découper un rectangle : il masque la
+     ligne « Press Space » de l'image d'accueil sans trancher dedans, et sa
+     hauteur suit celle des boutons quelle que soit la taille de l'écran. */
+  background: linear-gradient(to bottom, rgba(10, 8, 7, 0) 0%, rgba(10, 8, 7, 0.86) 38%, rgba(10, 8, 7, 0.985) 62%, #0a0807 100%);
+}
+
+.panel--narrow { width: min(20rem, 100%) !important; text-align: center; }
+
+.panel-actions--stack { flex-direction: column; }
+
+.rules-text {
+  margin: 0 0 0.6rem;
+  max-width: 34rem;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #e0d6c9;
+}
+
+.rules-text b { color: #ffd9a0; }
+
+.panel--center {
+  margin: auto;
+  width: min(30rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: clamp(0.8rem, 2.5vmin, 1.4rem);
+  background: rgba(20, 16, 14, 0.94);
+  border: 1px solid #3a322c;
+  border-radius: 0.7rem;
+  box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.55);
+}
+
+/* ── Boutons ────────────────────────────────────────────────────────── */
+
+.action {
+  font: inherit;
+  font-weight: 650;
+  color: #e8e2d8;
+  background: #241d19;
+  border: 1px solid #4a3f37;
+  border-radius: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.action:hover, .action:focus-visible { background: #322820; border-color: #7a6450; }
+
+.action--primary {
+  background: #8c2f1d;
+  border-color: #c25235;
+  color: #fff3e6;
+}
+
+.action--primary:hover, .action--primary:focus-visible { background: #a63a24; border-color: #e2704d; }
+
+.action small { font-weight: 400; font-size: 0.72em; opacity: 0.75; }
+
+/* ── Formulaire ─────────────────────────────────────────────────────── */
+
+#setup-panel h1 {
+  margin: 0 0 0.8rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+
+fieldset { border: 0; margin: 0 0 0.85rem; padding: 0; }
+
+legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #9b8f83;
+}
+
+.choices { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+/* Boutons segmentés bâtis sur de vrais radios : navigation au clavier et
+   lecture d'écran fonctionnent sans code supplémentaire. */
+.choices label {
+  flex: 1 1 5.5rem;
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #4a3f37;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  background: #1d1815;
+}
+
+.choices input { position: absolute; opacity: 0; pointer-events: none; }
+.choices label:hover { border-color: #7a6450; }
+.choices input:focus-visible + span { outline: 2px solid #e2704d; outline-offset: 3px; }
+
+.choices label:has(input:checked) {
+  background: #3d2a1f;
+  border-color: #c25235;
+  color: #ffd9a0;
+}
+
+.choices label small { display: block; font-size: 0.72em; opacity: 0.7; font-weight: 400; }
+
+.hint { margin: 0.35rem 0 0; font-size: 0.75rem; color: #9b8f83; line-height: 1.4; }
+
+.seed-row { display: flex; gap: 0.35rem; }
+
+#seed-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #e8e2d8;
+  background: #1d1815;
+  border: 1px solid #4a3f37;
+  border-radius: 0.4rem;
+  padding: 0.42rem 0.6rem;
+}
+
+#seed-input:focus-visible { outline: 2px solid #e2704d; outline-offset: 1px; border-color: #c25235; }
+
+#seed-reroll {
+  font: inherit;
+  font-size: 0.82rem;
+  color: #e8e2d8;
+  background: #241d19;
+  border: 1px solid #4a3f37;
+  border-radius: 0.4rem;
+  padding: 0.42rem 0.7rem;
+  cursor: pointer;
+}
+
+#seed-reroll:hover { background: #322820; border-color: #7a6450; }
+
+.plan {
+  margin: 0 0 0.85rem;
+  padding: 0.5rem 0.65rem;
+  background: #1a1512;
+  border-left: 2px solid #c25235;
+  border-radius: 0.25rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #c9bdb0;
+}
+
+.panel-actions { display: flex; gap: 0.5rem; }
+.panel-actions .action { flex: 1; }
+
+/* ── Bandeau d'état ─────────────────────────────────────────────────── */
+
+#bar {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.7rem;
+  padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
+  background: #0d0b0a;
+  border-top: 1px solid #2a2521;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#bar-info {
+  color: #a89e94;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-tools { display: flex; gap: 0.3rem; flex: none; }
+
+.tool {
+  font: inherit;
+  font-size: 0.72rem;
+  color: #c9bdb0;
+  background: #1d1815;
+  border: 1px solid #3a322c;
+  border-radius: 0.35rem;
+  padding: 0.28rem 0.6rem;
+  cursor: pointer;
+}
+
+.tool[hidden] { display: none; }
+.tool:hover, .tool:focus-visible { background: #2c241e; color: #e8e2d8; }
+.tool[aria-pressed="true"] { background: #3d2a1f; border-color: #c25235; color: #ffd9a0; }
+
+noscript { padding: 1rem; text-align: center; }
+
+/* ── Commandes tactiles ─────────────────────────────────────────────────
+   Positionnées par `Ui.layoutTouch` : dans la bande sous la scène quand elle
+   est assez haute, sinon en surimpression au bas du cadre de jeu. */
+
+#touch {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 clamp(0.5rem, 4vw, 2rem);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#touch[hidden] { display: none; }
+
+#touch[data-layout="colonnes"] { padding: 0 0.5rem; }
+
+#touch[data-layout="surimpression"] {
+  background: linear-gradient(to bottom, rgba(10, 8, 7, 0) 0%, rgba(10, 8, 7, 0.85) 40%);
+}
+
+#dpad {
+  position: relative;
+  flex: none;
+  width: var(--pad);
+  height: var(--pad);
+}
+
+.dpad-btn {
+  position: absolute;
+  width: 34%;
+  height: 34%;
+  padding: 0;
+  border: 1px solid #4a3f37;
+  border-radius: 0.5rem;
+  background: rgba(36, 29, 25, 0.92);
+  cursor: pointer;
+}
+
+/* La flèche est un pseudo-élément que l'on fait pivoter, jamais le bouton :
+   tourner le bouton transformerait son coin arrondi en losange. */
+.dpad-btn::after {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  background: #d8cec2;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+.dpad-btn:active, .dpad-btn.is-down { background-color: #8c2f1d; border-color: #e2704d; }
+.dpad-btn:active::after, .dpad-btn.is-down::after { background: #ffe9d8; }
+
+.dpad-up { top: 0; left: 33%; }
+.dpad-right { top: 33%; right: 0; }
+.dpad-right::after { transform: rotate(90deg); }
+.dpad-down { bottom: 0; left: 33%; }
+.dpad-down::after { transform: rotate(180deg); }
+.dpad-left { top: 33%; left: 0; }
+.dpad-left::after { transform: rotate(-90deg); }
+
+#slow-toggle {
+  flex: none;
+  width: var(--pad);
+  height: var(--pad);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font: inherit;
+  color: #c9bdb0;
+  background: rgba(36, 29, 25, 0.92);
+  border: 1px solid #4a3f37;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 1.15;
+}
+
+#slow-toggle b { font-size: 1.15rem; }
+#slow-toggle small { font-size: 0.58rem; opacity: 0.8; }
+
+#slow-toggle[aria-pressed="true"] {
+  background: #2c4a28;
+  border-color: #8fe388;
+  color: #b8f0b2;
+}

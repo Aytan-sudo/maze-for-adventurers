@@ -1,0 +1,50 @@
+{
+  "format": "mfa-maze-1",
+  "note": "2 bits par cellule (nord, ouest), MSB d'abord, ordre ligne par ligne ; bord extérieur implicite",
+  "mazes": [
+    {
+      "id": "level1",
+      "n": 10,
+      "start": [
+        5,
+        4
+      ],
+      "source": "Maze_1/Maze_10_10",
+      "algo": "backtracker",
+      "walls": "67rsVlVowxZqzFrGVpeG6FrW84TFjpUqoQ=="
+    },
+    {
+      "id": "level2",
+      "n": 17,
+      "start": [
+        8,
+        8
+      ],
+      "source": "Maze_2/Maze_17_17",
+      "algo": "backtracker",
+      "walls": "66uqq5o5heUWY7lk5XsRcpVpe1bVWlUTFhVGjmKpqqx7nGaWMRWejmOlla1roeeVMTpUcbPnGtZWVHoWGVeWZekRYWVMajoWAA=="
+    },
+    {
+      "id": "level3",
+      "n": 17,
+      "start": [
+        8,
+        8
+      ],
+      "source": "Maze_3/maze500",
+      "algo": "Prim/Kruskal",
+      "walls": "77urupRZG5Fm6Go8txfqMWNcCzHNFouOdS+12ZCtwMWPZHKH4HVRrUmUzMmMZsnFqaRoymc7crM8oR7l8OcpTYdKaY1VKcrEAA=="
+    },
+    {
+      "id": "level4",
+      "n": 34,
+      "start": [
+        17,
+        16
+      ],
+      "source": "Maze_4/Maze_34_34",
+      "algo": "backtracker",
+      "walls": "67quq6u66q7sRbh6HxXHhRFrFbGpXEYaa+xc4aZUeu6OUWWxu4zjGWoUxWTpTjGOSq6jXKNWeHle6GqFrpGxpFzG6qlqMqG54RbGZmdq2pWXqcaMuUuTmFROU7qpVUajbOpShOoZWqqNIdeatuoV27kulEakk7hUXHjlqZnaVaVkVrFeeFHx5lzhscZVupGRhWalh4U45mZpx5zqHmjl2ZtmxbZ5GrMWGljGZNToxJ1rlqaMxHObsRtGaeszGIdVYUabFl3OqlFa6pZq4UZbZoWW4ZqVU5MZbhmXp6VbhqhZumYczMVOm6ZxXKhXo1p3FZbFZ6MalsUY4YZca43FyjrjmqHOWRfGrtaX6uUXaEZsUbRDhW1aqpxjIaqGjEaimA=="
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maze for Adventurers</title>
+<meta name="description" content="Traversez les labyrinthes, esquivez les minotaures, trouvez le trésor.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#14110f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+    <canvas id="stage"></canvas>
+
+    <!-- Surcouche calée sur le cadre du jeu par Stage.cssRect. -->
+    <div id="overlay" hidden>
+
+      <div id="menu-panel" class="panel panel--bottom" hidden>
+        <button type="button" class="action action--primary" data-action="campagne">
+          Campagne originale
+          <small>Les 4 labyrinthes du jeu de 2024</small>
+        </button>
+        <button type="button" class="action" data-action="setup">
+          Donjon aléatoire
+          <small>Taille, difficulté et graine au choix</small>
+        </button>
+      </div>
+
+      <div id="pause-panel" class="panel panel--center panel--narrow" hidden>
+        <h1>Pause</h1>
+        <div class="panel-actions panel-actions--stack">
+          <button type="button" class="action action--primary" data-action="reprendre">Reprendre</button>
+          <button type="button" class="action" data-action="recommencer">Recommencer ce donjon</button>
+          <button type="button" class="action" data-action="menu">Quitter vers le menu</button>
+        </div>
+      </div>
+
+      <div id="end-panel" class="panel panel--bottom" hidden>
+        <button type="button" class="action action--primary" data-action="rejouer">Rejouer</button>
+        <button type="button" class="action" data-action="menu">Menu</button>
+      </div>
+
+      <div id="rules-panel" class="panel panel--bottom" hidden>
+        <p class="rules-text">
+          <b data-rules="move">Flèches ou ZQSD</b> pour avancer ·
+          <b data-rules="slow">W</b> pour marcher lentement, seul moyen d'échapper aux minotaures ·
+          l'escalier mène au niveau suivant
+        </p>
+        <button type="button" class="action action--primary" data-action="commencer">Entrer dans le labyrinthe</button>
+      </div>
+
+      <form id="setup-panel" class="panel panel--center" hidden>
+        <h1>Composer un donjon</h1>
+
+        <fieldset>
+          <legend>Taille du dernier niveau</legend>
+          <div class="choices" data-group="taille"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Difficulté</legend>
+          <div class="choices" data-group="difficulte"></div>
+          <p class="hint" data-hint="difficulte"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Tracé</legend>
+          <div class="choices" data-group="trace"></div>
+          <p class="hint" data-hint="trace"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Graine</legend>
+          <div class="seed-row">
+            <input type="text" id="seed-input" name="graine" autocomplete="off"
+                   spellcheck="false" aria-label="Graine du donjon">
+            <button type="button" id="seed-reroll" title="Tirer une autre graine">Tirer</button>
+          </div>
+          <p class="hint">Une même graine redonne toujours le même donjon.</p>
+        </fieldset>
+
+        <p class="plan" id="setup-plan"></p>
+
+        <div class="panel-actions">
+          <button type="button" class="action" data-action="menu">Retour</button>
+          <button type="submit" class="action action--primary">Explorer</button>
+        </div>
+      </form>
+
+    </div>
+
+    <!-- Commandes tactiles : posées dans la bande sous la scène quand la place
+         le permet, sinon en surimpression au bas du cadre. -->
+    <div id="touch" hidden>
+      <div id="dpad" role="group" aria-label="Direction">
+        <button type="button" class="dpad-btn dpad-up" data-dir="0" aria-label="Haut"></button>
+        <button type="button" class="dpad-btn dpad-right" data-dir="1" aria-label="Droite"></button>
+        <button type="button" class="dpad-btn dpad-down" data-dir="2" aria-label="Bas"></button>
+        <button type="button" class="dpad-btn dpad-left" data-dir="3" aria-label="Gauche"></button>
+      </div>
+      <button type="button" id="slow-toggle" aria-pressed="false">
+        <b>W</b><small>marcher<br>lentement</small>
+      </button>
+    </div>
+  </main>
+
+  <div id="bar">
+    <span id="bar-info">chargement…</span>
+    <span class="bar-tools">
+      <button type="button" class="tool" data-action="pause" title="Pause (Échap)" hidden>Pause</button>
+      <button type="button" class="tool" data-action="son" title="Couper le son (M)">Son</button>
+      <button type="button" class="tool" data-action="pleinecran" title="Plein écran">Plein écran</button>
+    </span>
+  </div>
+
+  <noscript>Ce jeu a besoin de JavaScript pour fonctionner.</noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+# TODO — portage de Maze for Adventurers
+
+> **À lire en premier à chaque reprise de session.**
+> Les décisions figées et les données extraites du `.sb3` sont dans `README.md` :
+> pas besoin de ré-analyser le projet Scratch.
+
+État global : **étape 6 à démarrer** — 5 / 6 étapes terminées.
+
+---
+
+## Étape 1 — Extraction des assets ✅ TERMINÉE
+
+`tools/extract-sb3.mjs` régénère l'intégralité de `assets/` depuis le `.sb3`.
+Sans dépendance npm : lecteur ZIP et décodeur PNG écrits en Node pur.
+
+- [x] Lecteur ZIP en Node pur (pas de dépendance npm)
+- [x] Décodeur PNG en Node pur (`zlib.inflateSync` + défiltrage)
+- [x] Extraction des PNG embarqués en base64 dans les SVG
+- [x] Détection automatique de la géométrie de grille (boîte englobante, pas par PGCD)
+- [x] Extraction des 4 grilles de murs + vérification BFS (labyrinthe parfait)
+- [x] Écriture de `assets/data/mazes.json` (bits empaquetés en base64)
+- [x] Copie / optimisation des 9 images vers `assets/img/`
+- [x] Ré-encodage ffmpeg des 5 sons vers `assets/audio/` (MP3 96k / 128k)
+- [x] Exécution du script et vérification des sorties
+
+**Résultat :** 16,56 Mo de `.sb3` → **5,40 Mo** dans `assets/`
+(images 888,6 Ko → 259,7 Ko en WebP ; audio 15,69 Mo → 5,15 Mo en MP3).
+Les 4 grilles tiennent en 1,5 Ko de JSON (le 34×34 en 289 octets).
+
+**Vérifications passées :** bord extérieur fermé, labyrinthe parfait par BFS
+(100/100, 289/289, 289/289, 1156/1156), aller-retour empaquetage → base64 →
+dépaquetage identique au bit près, et rendu ASCII du 10×10 relu depuis le JSON
+identique à celui obtenu directement depuis les pixels.
+
+**Point de vigilance :** le manifeste `assets/data/assets.json` liste les
+fichiers réellement produits. `minotaur` est resté en PNG (le WebP était plus
+lourd) — le moteur doit lire le manifeste, jamais deviner l'extension.
+
+---
+
+## Étape 2 — Moteur de rendu ✅ TERMINÉE
+
+- [x] `index.html` + `css/style.css` (canevas plein cadre, bandes gérées en JS)
+- [x] `js/maze.js` : modèle de grille, décodage du JSON, accesseurs de murs
+- [x] `js/assets.js` : chargement des images via le manifeste
+- [x] `js/render.js` : tracé vectoriel des murs, sprites, écrans
+- [x] Redimensionnement responsive, gestion du `devicePixelRatio`
+- [x] Vérification que les 4 niveaux correspondent aux labyrinthes d'origine
+
+**Vérification :** rendu des 4 textures en Chrome headless, relecture de leurs
+pixels et reconstruction de la grille — **3 824 emplacements de mur comparés,
+aucun écart**. La chaîne PNG d'origine → grille → JSON → rendu → pixels est donc
+vérifiée de bout en bout.
+
+**Choix de rendu.** Repère logique 480×360 hérité de Scratch, mis à l'échelle au
+dernier moment : `MAZE_BOX = {x:70, y:10, size:340}` reproduit exactement le
+carré de jeu d'origine, et les cellules retombent sur 34 / 20 / 10 unités. Les
+sprites font 0,72 cellule (ratio mesuré sur les tailles Scratch). Le labyrinthe
+est tracé une fois dans une texture hors écran, mémorisée tant que la
+résolution ne change pas.
+
+**Deux pièges déjà traités, à ne pas réintroduire :**
+- la texture a une marge `pad` = demi-épaisseur de trait, sinon les murs du
+  pourtour sont rognés de moitié et le cadre paraît deux fois plus fin ;
+- la texture fait un multiple entier de `n`, sinon les cellules ne font pas
+  toutes le même nombre de pixels et les murs semblent d'épaisseur inégale.
+
+**Prévisualisation :** `?level=1..4` et `?grid` dans l'URL, ou les touches 1–4,
+G (réseau de contrôle) et S (sprites). Ce bloc est balisé dans `js/main.js` et
+disparaît à l'étape 3.
+
+---
+
+## Étape 3 — Logique de jeu ✅ TERMINÉE
+
+- [x] `js/rng.js` : mulberry32 + hachage de chaîne vers graine
+- [x] `js/input.js` : flèches, ZQSD, `W` (marche lente), `M` (sourdine)
+- [x] `js/entities.js` : `Walker` / `Hero` / `Minotaur`, glissement de case en case
+- [x] `js/level.js` : règles d'un niveau, rencontres, campagne d'origine
+- [x] Jet de survie sous `W` (49/50, paramétrable pour Cauchemar)
+- [x] Compteur `Traveled` (pas réellement effectués uniquement)
+- [x] `js/screens.js` : machine à états des 6 écrans
+- [x] `js/audio.js` : chargement paresseux, sourdine persistante, déverrouillage
+- [x] Placement de la sortie à distance BFS ≥ 60 % du maximum
+
+**Vérification :** `node tools/check-rules.mjs` — **30 contrôles, tous verts**.
+Traversée simulée des 4 niveaux (le compteur retombe exactement sur la longueur
+du plus court chemin), 22 864 pas de minotaures sans un seul mur traversé ni un
+demi-tour hors impasse, 4 000 contacts pour valider les taux de mortalité
+(1,8 % en marche lente, 100 % en courant, 9,9 % au réglage Cauchemar), et
+reproductibilité par la graine.
+
+**À savoir pour la suite :**
+- `tools/check-rules.mjs` tourne dans Node parce que `maze.js`, `entities.js`,
+  `level.js` et `rng.js` ne touchent ni au DOM ni au canevas. **Garder cette
+  séparation** : c'est ce qui rend les règles testables sans navigateur.
+- Le héros enchaîne le pas suivant dès l'arrivée si la direction est maintenue.
+  Un pilote automatique doit donc calculer sa direction depuis la cellule
+  **visée** (`hero.i/j`), pas celle quittée, sinon il dépasse d'une case.
+- Le HUD occupe les marges latérales (70 unités de large), jamais le haut ni le
+  bas : le carré de jeu ne laisse que 10 unités de marge verticale.
+- Raccourcis de développement dans l'URL : `?skip[&level=N][&seed=X]` et
+  `?screen=rules|dead|victory|credits`. À retirer ou garder à l'étape 5.
+
+---
+
+## Étape 4 — Générateur et configuration ✅ TERMINÉE
+
+- [x] Backtracker récursif semé (`generateBacktracker`, pile explicite)
+- [x] Prim semé (`generatePrim`, style `maze500`)
+- [x] `js/config.js` : tailles, difficultés, rampe, densité de minotaures, URL
+- [x] `js/ui.js` + surcouche HTML : panneau de composition
+- [x] Barème de difficulté (cf. README §4)
+- [x] Configuration reflétée dans l'URL, donjon partageable par lien
+- [x] Mode « campagne originale » avec les 4 grilles extraites
+
+**Vérification :** `node tools/check-rules.mjs` — **51 contrôles, tous verts**.
+Les 24 grilles engendrées sont toutes des labyrinthes parfaits ; le backtracker
+retombe sur 10,8 % d'impasses (grilles d'origine : 9,3 à 12,0 %), Prim sur
+32,8 % (`maze500` : 27,0 %). Les 16 combinaisons taille × difficulté sont
+vérifiées, et un donjon Grand/Difficile est franchi de bout en bout en
+pilotage automatique.
+
+**Découverte à ne pas oublier :** un backtracker **peut** produire un croisement
+en croix, quand la pile redescend sur une cellule déjà traversée et lui creuse
+une troisième puis une quatrième ouverture. C'est marginal (~0,1 %, et 0/0/2 sur
+les grilles d'origine) mais réel : le contrôle vérifie donc un **taux**, pas une
+absence. Une première version du test échouait pour cette raison.
+
+**Choix d'interface.** Le panneau est en HTML, pas dessiné sur le canevas : bâti
+sur de vrais `input[type=radio]`, il hérite gratuitement de la navigation au
+clavier, du focus et de la lecture d'écran. Il est calé sur le cadre du jeu par
+`Stage.cssRect`, pas sur le canevas entier, pour ne pas déborder sur les bandes
+noires. Les boutons du menu portent leur propre bandeau dégradé, dont la hauteur
+suit la leur — c'est ce qui masque proprement la ligne « Press Space » de
+l'image d'accueil à toute taille d'écran.
+
+**Raccourci de développement :** `?setup` ouvre directement le panneau.
+
+---
+
+## ⚠︎ À penser : un vrai mode mobile
+
+Le jeu est né sur Scratch, au clavier, sur un écran 4:3. Le porter au tactile
+n'est pas qu'une affaire de boutons à ajouter — plusieurs points demandent une
+décision, pas seulement du code :
+
+1. **La taille des cellules est le vrai problème.** Un 34×34 sur un écran de
+   390 px de large donne des cellules de ~10 px : le héros et les minotaures
+   deviennent illisibles, et on ne voit plus assez loin pour décider où aller.
+   Trois issues possibles, à trancher :
+   - une **caméra qui suit le héros** avec un zoom fixe (le plus jouable, mais
+     on perd la vue d'ensemble qui fait tout le sel d'un labyrinthe) ;
+   - **plafonner la taille** proposée selon la largeur de l'écran ;
+   - une **vue d'ensemble momentanée** (appui long) par-dessus la vue zoomée.
+2. **Portrait :** la scène 4:3 contenue dans un écran allongé laisse de larges
+   bandes en haut et en bas. Ce sont elles qui doivent accueillir les
+   contrôles — jamais par-dessus le labyrinthe, qu'on doit lire en entier.
+3. **La marche lente doit être une bascule, pas un maintien.** Tenir deux
+   doigts (direction + `W`) est intenable au pouce.
+4. **Tout doit être atteignable sans clavier** : chaque écran qui attendait
+   « Espace » a besoin de son bouton.
+5. **Plein écran, zones sûres, pas de défilement ni de zoom accidentel**, et à
+   terme un `manifest.webmanifest` pour l'installation sur l'écran d'accueil.
+
+Les points 2 à 5 sont traités depuis l'étape 5. **Le point 1 reste ouvert** et
+mérite d'être essayé sur un vrai téléphone avant de choisir.
+
+Un gain simple s'y ajoute, non fait : pendant une partie sur écran étroit, les
+marges latérales de la scène (70 unités de chaque côté, soit 29 % de la largeur)
+n'accueillent que le HUD. Les déplacer dans la barre du bas laisserait le
+labyrinthe occuper toute la largeur — près d'un tiers de cellule gagné sans
+toucher au reste.
+
+---
+
+## Étape 5 — Confort navigateur ✅ TERMINÉE
+
+- [x] D-pad tactile + bascule « marcher lentement »
+- [x] Pause (Échap / P) avec reprise, recommencer, retour au menu
+- [x] Boutons sur les écrans de fin : rejouer, menu
+- [x] Barre d'outils : son, plein écran, pause
+- [x] Sourdine persistante (`localStorage`) — faite à l'étape 3
+- [x] Écran de règles : image d'origine en fond, texte réel superposé,
+      libellés adaptés au tactile
+- [x] Test aux dimensions d'un téléphone (portrait et paysage)
+- [x] Sort du bandeau de débogage tranché : devenu la barre d'outils `#bar`
+
+**Trois dispositions tactiles**, choisies par `Ui.layoutTouch` selon la place
+laissée par la scène 4:3 — le labyrinthe n'est jamais recouvert :
+
+| Situation | Disposition |
+|---|---|
+| Bande basse ≥ 108 px (portrait) | commandes collées en bas, scène remontée (`verticalBias = 0,14`) |
+| Bandes latérales ≥ 96 px (paysage) | D-pad à gauche, bascule à droite |
+| Ni l'un ni l'autre | surimpression au bas du cadre, en dernier recours |
+
+**Décisions d'ergonomie :**
+- la marche lente est une **bascule**, pas un maintien : tenir direction et `W`
+  à la fois est intenable au pouce ;
+- le rappel clavier « W » dessiné sur le canevas s'efface quand les commandes
+  tactiles sont visibles, sinon il fait doublon avec la bascule ;
+- l'écran de règles réécrit ses libellés au tactile (« La croix directionnelle »
+  au lieu de « Flèches ou ZQSD ») ;
+- `pointerdown` + `setPointerCapture` sur chaque bouton du D-pad : sans la
+  capture, un doigt qui glisse hors du bouton ne renvoie pas le relâchement et
+  le héros continue tout seul.
+
+**Deux pièges rencontrés :**
+- **Chrome headless impose une largeur de fenêtre minimale d'environ 500 px.**
+  `--window-size=430,880` donne en réalité un viewport de 500 px et une capture
+  rognée : ce n'était pas un bug de mise en page. Capturer à 500 px au minimum.
+- Faire pivoter un bouton du D-pad pour orienter sa flèche transformait son coin
+  arrondi en losange. C'est le **pseudo-élément** qui pivote, jamais le bouton.
+
+**Raccourci de développement :** `?ecran=setup|pause|credits|dead|victory`
+ouvre directement un écran (`?tactile` force les commandes tactiles). Conservé :
+il rend les captures reproductibles.
+
+---
+
+## Étape 6 — Publication
+
+- [ ] `manifest.webmanifest` + icônes
+- [ ] `git init`, premier commit
+- [ ] Dépôt `Aytan-sudo/maze-for-adventurers`, push
+- [ ] Activer GitHub Pages, vérifier que le jeu tourne en ligne
+- [ ] `node ~/dev/python/Jeux_Pages/HUB/ajouter-jeu.mjs` avec description et tags
+
+---
+
+## Journal des sessions
+
+### Session 1 — 18/08/2026
+- Analyse complète du `.sb3` : décompilation des ~1 300 blocs, extraction des
+  4 grilles, identification de l'algorithme d'origine (backtracker récursif),
+  inventaire des assets. Tout est consigné dans `README.md` §2.
+- Arbitrages validés : déplacement case par case, audio ré-encodé et paresseux,
+  bouton rejouer, sortie à distance minimale, compteur `Traveled` corrigé,
+  ajout d'un générateur semé avec configuration de partie.
+- Création de `README.md` et `TODO.md`.
+- Démarrage de l'étape 1.
+
+### Session 2 — 18/08/2026
+- Étape 1 terminée. `tools/extract-sb3.mjs` écrit, exécuté et vérifié.
+- Ajout d'un `.gitignore` (`.DS_Store`).
+- Correction en cours de route : l'heuristique d'algorithme se fonde sur le taux
+  d'impasses seul (le 34×34 a 2 croisements en croix mais reste un backtracker),
+  et le ré-encodage audio ne force plus la stéréo (les sources mono restent mono).
+- **Prochaine action :** étape 2, le moteur de rendu. Commencer par `index.html`,
+  `css/style.css` et `js/maze.js`, puis afficher le niveau 1 et le comparer au
+  rendu ASCII de référence ci-dessus.
+
+### Session 3 — 18/08/2026
+- Étape 2 terminée : `index.html`, `css/style.css`, `js/maze.js`, `js/assets.js`,
+  `js/render.js`, `js/main.js`.
+- Vérification par capture Chrome headless (l'extension navigateur n'était pas
+  connectée) : `--headless --screenshot` sur un serveur `python3 -m http.server`.
+  Méthode à réutiliser aux étapes suivantes.
+- **Prochaine action :** étape 3, la logique de jeu. Commencer par `js/rng.js` et
+  `js/input.js`, puis le déplacement case par case du héros dans `js/entities.js`.
+
+### Session 4 — 19/08/2026
+- Étape 3 terminée : `rng.js`, `input.js`, `entities.js`, `level.js`,
+  `audio.js`, `screens.js`, et `main.js` réécrit en vrai point d'entrée.
+- Ajout de `tools/check-rules.mjs`, contrôle permanent des règles sans navigateur.
+- Écarts assumés vis-à-vis de l'original, consignés dans `README.md` §3 :
+  jet de survie une fois par contact, cadences chiffrées, minotaures sans
+  demi-tour immédiat et non adjacents au départ, ZQSD au lieu de WASD.
+- **Prochaine action :** étape 4, le générateur. Écrire le backtracker récursif
+  semé dans `js/maze.js` (`Maze.solid(n)` et `open()` existent déjà), vérifier
+  qu'il retrouve ~10 % d'impasses et 0 croix comme les labyrinthes d'origine,
+  puis l'écran de configuration.
+
+### Session 5 — 19/08/2026
+- Étape 4 terminée : générateurs dans `js/maze.js`, `js/config.js`, `js/ui.js`,
+  surcouche HTML et feuille de style refondues, `js/main.js` recâblé.
+- `tools/check-rules.mjs` étendu aux générateurs et aux 16 combinaisons de
+  configuration : 51 contrôles.
+- Réglage : la rampe de tailles partait trop bas (premier niveau à 6×6 en
+  Moyen) ; plancher relevé à `max(8, n/2,5)`.
+- **Prochaine action :** étape 5, le confort. D-pad tactile et bouton « marcher
+  lentement » (la surcouche et `Stage.cssRect` sont déjà en place pour les
+  poser), pause, bouton rejouer, plein écran, puis retirer ou assumer les
+  raccourcis de développement `?setup` et le bandeau `#debug`.
+
+### Session 6 — 19/08/2026
+- Section « À penser : un vrai mode mobile » ajoutée en tête des étapes.
+- Étape 5 terminée : `js/ui.js` refondu (panneaux, barre d'outils, D-pad),
+  `input.js` ouvert aux commandes tactiles, `screens.js` doté d'un état pause,
+  `render.js` doté de `verticalBias`, balisage et feuille de style refaits.
+- **Prochaine action :** étape 6, la publication. `manifest.webmanifest` et
+  icônes, `git init`, dépôt `Aytan-sudo/maze-for-adventurers`, GitHub Pages,
+  puis `node ~/dev/python/Jeux_Pages/HUB/ajouter-jeu.mjs`.

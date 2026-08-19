@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-08-18T20:04:35.004Z",
+  "source": "Old_Scratch/Maze for Adventurers.sb3",
+  "images": {
+    "start_menu": {
+      "file": "img/start_menu.webp",
+      "w": 960,
+      "h": 720
+    },
+    "rules": {
+      "file": "img/rules.webp",
+      "w": 960,
+      "h": 720
+    },
+    "dead": {
+      "file": "img/dead.webp",
+      "w": 960,
+      "h": 720
+    },
+    "victory": {
+      "file": "img/victory.webp",
+      "w": 566,
+      "h": 505
+    },
+    "credits": {
+      "file": "img/credits.webp",
+      "w": 960,
+      "h": 720
+    },
+    "hero": {
+      "file": "img/hero.webp",
+      "w": 200,
+      "h": 200
+    },
+    "minotaur": {
+      "file": "img/minotaur.png",
+      "w": 200,
+      "h": 200
+    },
+    "stairs": {
+      "file": "img/stairs.webp",
+      "w": 200,
+      "h": 200
+    },
+    "treasure": {
+      "file": "img/treasure.webp",
+      "w": 200,
+      "h": 200
+    }
+  },
+  "audio": {
+    "menu": {
+      "file": "audio/menu.mp3",
+      "duration": 119.38
+    },
+    "adventure": {
+      "file": "audio/adventure.mp3",
+      "duration": 138.81
+    },
+    "credits": {
+      "file": "audio/credits.mp3",
+      "duration": 184.53
+    },
+    "dead": {
+      "file": "audio/dead.mp3",
+      "duration": 4.89
+    },
+    "pop": {
+      "file": "audio/pop.wav",
+      "duration": 0.02
+    }
+  }
+}
