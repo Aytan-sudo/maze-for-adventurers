@@ -71,17 +71,27 @@ function frame(now) {
 
   // Sur un écran étroit, la scène passe au carré le temps de la partie : le
   // labyrinthe cesse d'être bridé par la largeur des marges du format 4:3.
+  //
+  // Au tactile, elle y passe aussi en paysage. Le carré n'y agrandit pas le
+  // labyrinthe — il reste bridé par la hauteur dans les deux formats — mais il
+  // rend les marges latérales du 4:3, jusque-là occupées par le HUD, aux
+  // commandes tactiles : sur iPad, le D-pad y double de taille. Le HUD passe
+  // dans la barre du bas, exactement comme en portrait.
   const playing = game && (game.screen === PLAY || game.screen === PAUSE);
   const narrow = innerWidth / Math.max(1, innerHeight) < 1.25;
-  const compact = Boolean(playing && narrow);
+  const compact = Boolean(playing && (narrow || ui.hasTouch));
   setViewport(compact ? 'jeu' : 'ecran');
 
   // En portrait les commandes vivent sous la scène : on leur réserve la place
   // *avant* de dimensionner celle-ci, et on remonte la scène dans ce qui reste.
-  // En paysage elles tiennent dans les marges latérales, donc rien à réserver.
+  // La réserve suit la taille de l'écran, pour qu'une tablette obtienne une
+  // bande à sa mesure. En paysage les commandes tiennent dans les marges
+  // latérales, donc rien à réserver.
   const touching = game && ui.touchActive(game.screen);
   const portrait = innerHeight > innerWidth;
-  stage.reservedBottom = touching && portrait ? 200 : 0;
+  stage.reservedBottom = touching && portrait
+    ? Math.round(Math.min(300, Math.max(200, innerHeight * 0.22)))
+    : 0;
   stage.verticalBias = touching && ui.touchLayout === 'bande' ? 0.14 : 0.5;
   stage.resize();
   const ctx = stage.begin();

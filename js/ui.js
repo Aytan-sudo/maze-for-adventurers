@@ -22,9 +22,22 @@ const GROUPS = {
   trace: { options: ALGORITHMS, label: o => o.label },
 };
 
-/** Place minimale, en pixels CSS, pour poser les commandes hors du labyrinthe. */
-const TOUCH_BAND = 108;
-const TOUCH_COLUMN = 96;
+/**
+ * Taille des commandes tactiles, en pixels CSS. Elle n'est pas fixée : elle
+ * découle de la place laissée par la scène, bornée aux deux bouts.
+ *
+ * - en dessous de `TOUCH_MIN`, la cible devient trop petite pour un pouce, et
+ *   la disposition suivante est essayée ;
+ * - au-delà de `TOUCH_MAX`, le bouton encombre sans être plus facile à viser.
+ */
+const TOUCH_MIN = 96;
+const TOUCH_MAX = 260;
+
+/** Écart entre les deux commandes — le `gap` du conteneur, en pixels. */
+const TOUCH_GAP = 16;
+
+/** Hauteur de la surimpression, dernier recours posé sur le labyrinthe. */
+const TOUCH_OVERLAY = 128;
 
 export class Ui {
   constructor(stage, input) {
@@ -257,41 +270,85 @@ export class Ui {
   }
 
   /**
+   * Zone masquée par l'encoche ou la barre d'accueil, en pixels CSS. Relue à
+   * chaque changement de taille : c'est là, et seulement là, qu'elle bouge.
+   */
+  safeInsets() {
+    const key = `${innerWidth}x${innerHeight}`;
+    if (this.insetKey !== key) {
+      const s = getComputedStyle(document.getElementById('safe-probe'));
+      this.insetKey = key;
+      this.insets = {
+        right: parseFloat(s.paddingRight) || 0,
+        left: parseFloat(s.paddingLeft) || 0,
+      };
+    }
+    return this.insets;
+  }
+
+  /**
    * Le labyrinthe doit rester lisible en entier : les commandes se posent donc
-   * dans la place que la scène 4:3 laisse autour d'elle, et jamais par-dessus.
+   * dans la place que la scène laisse autour d'elle, et jamais par-dessus.
    *
-   * - **portrait** : large bande sous le jeu, commandes collées en bas ;
-   * - **paysage** : bandes latérales, D-pad à gauche et bascule à droite ;
+   * - **bande** : sous le jeu, commandes collées en bas — le cas du portrait ;
+   * - **colonnes** : bandes latérales, D-pad à gauche et bascule à droite ;
    * - à défaut seulement, surimpression au bas du cadre.
+   *
+   * La taille des boutons n'est jamais choisie d'avance : chaque disposition
+   * annonce ce qu'elle peut offrir, on retient la première qui reste visable au
+   * pouce, et le bouton prend toute la place ainsi trouvée. Un iPad y gagne des
+   * flèches deux fois plus grandes que sur un téléphone, sans réglage dédié.
    */
   layoutTouch() {
     const rect = this.stage.cssRect;
     const app = document.getElementById('app').getBoundingClientRect();
-    const below = app.height - (rect.top + rect.height);
-    const side = Math.min(rect.left, app.width - (rect.left + rect.width));
+    const safe = this.safeInsets();
 
-    let box, pad;
-    if (below >= TOUCH_BAND) {
+    // Place libre autour de la scène, une fois l'encoche déduite.
+    const below = app.height - (rect.top + rect.height);
+    const side = Math.min(rect.left - safe.left, app.width - (rect.left + rect.width) - safe.right);
+
+    // Les deux commandes se partagent la largeur : chacune en a la moitié,
+    // gouttières et écart déduits.
+    const gutter = Math.max(8, Math.min(32, app.width * 0.04));
+    const halfWidth = (rect.width - 2 * gutter - TOUCH_GAP) / 2;
+
+    // Plafonnée et collée au bas : sur un grand écran, occuper toute la hauteur
+    // restante mettrait les boutons au milieu du vide.
+    const bandHeight = Math.min(below, TOUCH_MAX + 24);
+    const bandPad = Math.min(bandHeight - 16, halfWidth);
+    // Bornée par la hauteur de la scène : la commande est centrée dans sa
+    // colonne, et doit y garder un peu d'air au-dessus et au-dessous.
+    const columnPad = Math.min(side - 8, rect.height * 0.7);
+
+    let box, pad, margins;
+    if (bandPad >= TOUCH_MIN) {
       this.touchLayout = 'bande';
-      // Plafonnée et collée au bas : sur un grand téléphone, occuper toute la
-      // hauteur restante mettrait les boutons au milieu du vide.
-      const height = Math.min(below, 230);
-      box = { left: rect.left, top: app.height - height, width: rect.width, height };
-      pad = Math.min(190, height - 12, rect.width * 0.42);
-    } else if (side >= TOUCH_COLUMN) {
+      box = { left: rect.left, top: app.height - bandHeight, width: rect.width, height: bandHeight };
+      margins = { left: gutter, right: gutter };
+      pad = bandPad;
+    } else if (columnPad >= TOUCH_MIN) {
       this.touchLayout = 'colonnes';
       box = { left: 0, top: rect.top, width: app.width, height: rect.height };
-      pad = Math.min(190, side - 10, rect.height * 0.5);
+      // Collées aux bords de l'écran, les colonnes sont ce qui risque le plus
+      // de passer sous l'encoche : c'est ici que la sonde sert vraiment.
+      margins = { left: Math.max(8, safe.left), right: Math.max(8, safe.right) };
+      pad = columnPad;
     } else {
       this.touchLayout = 'surimpression';
-      const height = Math.min(TOUCH_BAND + 20, rect.height * 0.34);
+      const height = Math.min(TOUCH_OVERLAY, rect.height * 0.34);
       box = { left: rect.left, top: rect.top + rect.height - height, width: rect.width, height };
-      pad = Math.min(140, height - 10, rect.width * 0.32);
+      margins = { left: gutter, right: gutter };
+      // Posée sur le labyrinthe, elle reste volontairement discrète.
+      pad = Math.min(height - 10, halfWidth, 180);
     }
 
     this.touch.dataset.layout = this.touchLayout;
     this.place(this.touch, box);
-    this.touch.style.setProperty('--pad', `${Math.max(96, pad)}px`);
+    this.touch.style.paddingLeft = `${Math.round(margins.left)}px`;
+    this.touch.style.paddingRight = `${Math.round(margins.right)}px`;
+    const size = Math.round(Math.min(TOUCH_MAX, Math.max(TOUCH_MIN, pad)));
+    this.touch.style.setProperty('--pad', `${size}px`);
   }
 }
 

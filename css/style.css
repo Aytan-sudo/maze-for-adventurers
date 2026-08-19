@@ -4,16 +4,41 @@
 
 * { box-sizing: border-box; }
 
+/* `100%` vaut la hauteur du viewport barres rétractées : sur iPhone, après une
+   rotation, la page dépasse alors de ce qui est visible et le bas — barre
+   d'outils comprise — se retrouve coupé. `dvh` suit la hauteur réellement
+   affichée, et le corps fixe interdit à la page de glisser sous les barres. */
 html, body {
   height: 100%;
+  height: 100dvh;
   margin: 0;
+  overflow: hidden;
   background: #14110f;
   color: #e8e2d8;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   overscroll-behavior: none;
 }
 
-body { display: flex; flex-direction: column; }
+body {
+  position: fixed;
+  inset: 0 0 auto 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sonde : `env()` n'existe qu'en CSS. On lit ses valeurs sur cet élément pour
+   que la mise en place des commandes tactiles évite l'encoche en paysage. */
+#safe-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
 
 #app { flex: 1; min-height: 0; display: flex; position: relative; }
 
@@ -211,6 +236,10 @@ legend {
   align-items: center;
   justify-content: space-between;
   padding: 0.4rem 0.7rem;
+  /* En paysage l'encoche mange un bord : sans ces marges, le texte d'état et
+     le bouton « Plein écran » passent dessous. */
+  padding-left: max(0.7rem, env(safe-area-inset-left));
+  padding-right: max(0.7rem, env(safe-area-inset-right));
   padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
   background: #0d0b0a;
   border-top: 1px solid #2a2521;
@@ -244,7 +273,12 @@ legend {
 /* Au doigt, on vise moins bien qu'à la souris : on agrandit encore. */
 @media (pointer: coarse) {
   .tool { min-height: 2.9rem; padding: 0.55rem 0.95rem; font-size: 0.82rem; }
-  #bar { padding: 0.35rem 0.5rem; padding-bottom: max(0.35rem, env(safe-area-inset-bottom)); }
+  #bar {
+    padding: 0.35rem 0.5rem;
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+  }
   #bar-info { font-size: 0.72rem; }
 }
 
@@ -264,15 +298,15 @@ noscript { padding: 1rem; text-align: center; }
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0 clamp(0.5rem, 4vw, 2rem);
+  /* Marges latérales posées par `Ui.layoutTouch` : elles dépendent de la
+     disposition retenue et de la place mangée par l'encoche. */
+  padding: 0;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
 #touch[hidden] { display: none; }
-
-#touch[data-layout="colonnes"] { padding: 0 0.5rem; }
 
 #touch[data-layout="surimpression"] {
   background: linear-gradient(to bottom, rgba(10, 8, 7, 0) 0%, rgba(10, 8, 7, 0.85) 40%);
@@ -335,8 +369,10 @@ noscript { padding: 1rem; text-align: center; }
   line-height: 1.15;
 }
 
-#slow-toggle b { font-size: 1.15rem; }
-#slow-toggle small { font-size: 0.58rem; opacity: 0.8; }
+/* Le bouton grandit avec la place disponible : son libellé doit suivre, sinon
+   il flotte, minuscule, au milieu d'un grand disque. */
+#slow-toggle b { font-size: clamp(1rem, calc(var(--pad) * 0.14), 2rem); }
+#slow-toggle small { font-size: clamp(0.55rem, calc(var(--pad) * 0.06), 0.95rem); opacity: 0.8; }
 
 #slow-toggle[aria-pressed="true"] {
   background: #2c4a28;

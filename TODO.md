@@ -189,13 +189,21 @@ la lisibilité devient un problème sans le supprimer.
 - [x] Sort du bandeau de débogage tranché : devenu la barre d'outils `#bar`
 
 **Trois dispositions tactiles**, choisies par `Ui.layoutTouch` selon la place
-laissée par la scène 4:3 — le labyrinthe n'est jamais recouvert :
+laissée par la scène — le labyrinthe n'est jamais recouvert. Le critère n'est
+pas la place brute mais **la taille de bouton qu'elle permet** : chaque
+disposition annonce la sienne, et la première à atteindre 96 px l'emporte.
 
 | Situation | Disposition |
 |---|---|
-| Bande basse ≥ 108 px (portrait) | commandes collées en bas, scène remontée (`verticalBias = 0,14`) |
-| Bandes latérales ≥ 96 px (paysage) | D-pad à gauche, bascule à droite |
+| Bande basse offrant ≥ 96 px de bouton (portrait) | commandes collées en bas, scène remontée (`verticalBias = 0,14`) |
+| Bandes latérales offrant ≥ 96 px (paysage) | D-pad à gauche, bascule à droite |
 | Ni l'un ni l'autre | surimpression au bas du cadre, en dernier recours |
+
+Le bouton prend ensuite **toute la place trouvée**, borné à 260 px. Un iPad en
+paysage obtient ainsi des flèches de 81 px là où la version précédente, qui
+plafonnait à 190 px de croix, les figeait à 40 px. L'encoche est déduite au
+passage : la sonde `#safe-probe` livre au JS les `env(safe-area-inset-*)` que
+seul le CSS connaît, et les colonnes s'en écartent.
 
 **Décisions d'ergonomie :**
 - la marche lente est une **bascule**, pas un maintien : tenir direction et `W`
