@@ -254,5 +254,33 @@ console.log('\ndonjon engendré — traversée complète');
     `${cleared} / ${config.levels.length} niveaux franchis en pilotage automatique`);
 }
 
+/* ── Interface : aucun bouton orphelin ────────────────────────────────── */
+
+// Un bouton dont l'action n'est traitée nulle part ne produit aucune erreur :
+// il ne fait simplement rien. C'est exactement ce qui est arrivé aux boutons
+// « Son » et « Pause », restés inertes sans que rien ne le signale.
+console.log('\ninterface');
+{
+  const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+  const html = read('index.html');
+  const sources = ['js/ui.js', 'js/main.js'].map(read).join('\n');
+
+  const declared = [...new Set([...html.matchAll(/data-action="([a-z]+)"/g)].map(m => m[1]))];
+  const handled = new Set([
+    ...[...sources.matchAll(/case '([a-z]+)':/g)].map(m => m[1]),
+    ...[...sources.matchAll(/action === '([a-z]+)'/g)].map(m => m[1]),
+  ]);
+  const orphans = declared.filter(a => !handled.has(a));
+  check(orphans.length === 0,
+    `${declared.length} actions déclarées, toutes traitées${orphans.length ? ` — SAUF ${orphans.join(', ')}` : ''}`);
+
+  // Même logique pour les identifiants : `getElementById` sur un id absent
+  // renvoie null, et l'erreur ne surgit qu'au premier usage.
+  const wanted = [...new Set([...sources.matchAll(/getElementById\('([\w-]+)'\)/g)].map(m => m[1]))];
+  const missing = wanted.filter(id => !html.includes(`id="${id}"`));
+  check(missing.length === 0,
+    `${wanted.length} identifiants référencés, tous présents${missing.length ? ` — SAUF ${missing.join(', ')}` : ''}`);
+}
+
 console.log(`\n${failures === 0 ? 'Toutes les vérifications passent.' : `${failures} ÉCHEC(S)`}`);
 process.exit(failures ? 1 : 0);

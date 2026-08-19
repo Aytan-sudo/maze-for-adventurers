@@ -2,7 +2,7 @@
 /**
  * extract-sb3.mjs — régénère assets/ depuis Old_Scratch/Maze for Adventurers.sb3
  *
- * Aucune dépendance npm : le ZIP est lu et les PNG décodés en Node pur.
+ * Aucune dépendance npm : le ZIP est lu ici, les PNG décodés par ./png.mjs.
  * Outils externes attendus dans le PATH :
  *   - ffmpeg (ré-encodage audio)  — requis
  *   - cwebp  (compression images) — optionnel, repli sur PNG
@@ -12,9 +12,10 @@
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { inflateSync, inflateRawSync } from 'node:zlib';
+import { inflateRawSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { decodePng, pngSize } from './png.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SB3 = join(ROOT, 'Old_Scratch', 'Maze for Adventurers.sb3');
@@ -91,80 +92,6 @@ function readZip(buf) {
     p += 46 + fnLen + extraLen + commentLen;
   }
   return files;
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
- * Décodage PNG (profondeur 8, non entrelacé — suffisant pour tous les assets)
- * ──────────────────────────────────────────────────────────────────────────── */
-
-function pngSize(buf) {
-  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
-}
-
-function decodePng(buf) {
-  let idat = [];
-  let width = 0, height = 0, channels = 0;
-  let p = 8;
-
-  while (p < buf.length) {
-    const len = buf.readUInt32BE(p);
-    const type = buf.toString('ascii', p + 4, p + 8);
-    const body = buf.subarray(p + 8, p + 8 + len);
-    if (type === 'IHDR') {
-      width = body.readUInt32BE(0);
-      height = body.readUInt32BE(4);
-      const depth = body[8], colorType = body[9], interlace = body[12];
-      if (depth !== 8) throw new Error(`profondeur PNG non gérée : ${depth}`);
-      if (interlace !== 0) throw new Error('PNG entrelacé non géré');
-      channels = { 0: 1, 2: 3, 4: 2, 6: 4 }[colorType];
-      if (!channels) throw new Error(`type de couleur PNG non géré : ${colorType}`);
-    } else if (type === 'IDAT') {
-      idat.push(body);
-    } else if (type === 'IEND') break;
-    p += 12 + len;
-  }
-
-  const raw = inflateSync(Buffer.concat(idat));
-  const stride = width * channels;
-  const out = Buffer.alloc(height * stride);
-  let prev = Buffer.alloc(stride);
-  let q = 0;
-
-  for (let y = 0; y < height; y++) {
-    const filter = raw[q++];
-    const line = Buffer.from(raw.subarray(q, q + stride));
-    q += stride;
-    switch (filter) {
-      case 0: break;
-      case 1:
-        for (let i = channels; i < stride; i++) line[i] = (line[i] + line[i - channels]) & 255;
-        break;
-      case 2:
-        for (let i = 0; i < stride; i++) line[i] = (line[i] + prev[i]) & 255;
-        break;
-      case 3:
-        for (let i = 0; i < stride; i++) {
-          const a = i >= channels ? line[i - channels] : 0;
-          line[i] = (line[i] + ((a + prev[i]) >> 1)) & 255;
-        }
-        break;
-      case 4:
-        for (let i = 0; i < stride; i++) {
-          const a = i >= channels ? line[i - channels] : 0;
-          const b = prev[i];
-          const c = i >= channels ? prev[i - channels] : 0;
-          const pp = a + b - c;
-          const pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c);
-          const pr = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-          line[i] = (line[i] + pr) & 255;
-        }
-        break;
-      default: throw new Error(`filtre PNG inconnu : ${filter}`);
-    }
-    line.copy(out, y * stride);
-    prev = line;
-  }
-  return { width, height, channels, data: out };
 }
 
 /** Les costumes SVG de Scratch enveloppent souvent un PNG en base64. */

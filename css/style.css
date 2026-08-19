@@ -229,13 +229,23 @@ legend {
 
 .tool {
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: #c9bdb0;
   background: #1d1815;
   border: 1px solid #3a322c;
   border-radius: 0.35rem;
-  padding: 0.28rem 0.6rem;
+  padding: 0.45rem 0.8rem;
   cursor: pointer;
+  /* Cible d'au moins 40 px : en dessous, on rate le bouton au pouce. */
+  min-height: 2.5rem;
+  min-width: 3rem;
+}
+
+/* Au doigt, on vise moins bien qu'à la souris : on agrandit encore. */
+@media (pointer: coarse) {
+  .tool { min-height: 2.9rem; padding: 0.55rem 0.95rem; font-size: 0.82rem; }
+  #bar { padding: 0.35rem 0.5rem; padding-bottom: max(0.35rem, env(safe-area-inset-bottom)); }
+  #bar-info { font-size: 0.72rem; }
 }
 
 .tool[hidden] { display: none; }

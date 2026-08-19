@@ -46,6 +46,13 @@ function runCommand(cmd) {
     case 'menu': game.goto(MENU); break;
     case 'reprendre': game.goto(PLAY); break;
     case 'recommencer': game.restart(); break;
+    case 'son':
+      game.audio.unlock();
+      game.audio.toggleMute();
+      break;
+    case 'pause':
+      game.goto(game.screen === PAUSE ? PLAY : PAUSE);
+      break;
     case 'rejouer':
       if (game.config.meta?.mode === 'campagne') game.start();
       else game.restart();

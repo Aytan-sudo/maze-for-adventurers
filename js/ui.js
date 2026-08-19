@@ -205,6 +205,7 @@ export class Ui {
 
     const pause = document.querySelector('[data-action="pause"]');
     pause.hidden = screen !== PLAY && screen !== PAUSE;
+    pause.textContent = screen === PAUSE ? 'Reprendre' : 'Pause';
     const sound = document.querySelector('[data-action="son"]');
     sound.textContent = state.muted ? 'Son coupé' : 'Son';
     sound.setAttribute('aria-pressed', String(state.muted));
