@@ -40,6 +40,23 @@ body {
            env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+/* ── Passeport ──────────────────────────────────────────────────────── */
+
+/* Le bandeau ouvre la page. Avec `viewport-fit=cover`, il passerait sous la
+   barre d'état une fois le jeu installé sur l'écran d'accueil, et sous
+   l'encoche en paysage. Sa hauteur reste celle du lien — 44 px — plus ces
+   marges, nulles tant qu'on joue dans Safari en portrait. */
+.passeport-ruban {
+  padding-top: env(safe-area-inset-top);
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
+  background: #0d0b0a;
+  border-bottom: 1px solid #2a2521;
+  color: #a89e94;
+}
+
+.passeport-ruban a { color: #e8e2d8; }
+
 #app { flex: 1; min-height: 0; display: flex; position: relative; }
 
 #stage {

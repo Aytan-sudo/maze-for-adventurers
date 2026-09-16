@@ -13,7 +13,8 @@ import { readFileSync } from 'node:fs';
 import { Maze, distancesFrom, DELTA, DIRECTIONS, generateMaze } from '../js/maze.js';
 import { Level, campaignConfig, SPEEDS } from '../js/level.js';
 import { Rng } from '../js/rng.js';
-import { randomConfig, SIZES, DIFFICULTIES, levelSize } from '../js/config.js';
+import { randomConfig, SIZES, DIFFICULTIES, levelSize, writeUrl } from '../js/config.js';
+import { compterMetresPasseport } from '../js/passeport.js';
 
 const data = JSON.parse(readFileSync(new URL('../assets/data/mazes.json', import.meta.url), 'utf8'));
 const campaign = data.mazes.map(m => ({
@@ -252,6 +253,58 @@ console.log('\ndonjon engendré — traversée complète');
   }
   check(cleared === config.levels.length,
     `${cleared} / ${config.levels.length} niveaux franchis en pilotage automatique`);
+}
+
+/* ── Passeport : le compteur de mètres et l'adresse ───────────────────── */
+
+console.log('\npasseport — compteur de mètres');
+{
+  // Un espace de joueur en mémoire : le vrai vient de `commun/passeport.js`,
+  // qui n'existe que dans un navigateur.
+  const espace = () => {
+    const donnees = new Map();
+    return {
+      ecritures: 0,
+      getItem: k => donnees.get(k) ?? null,
+      setItem(k, v) { this.ecritures++; donnees.set(k, String(v)); },
+    };
+  };
+
+  const invite = espace();
+  check(compterMetresPasseport('2026-09-16', 5, null) === null, 'mode invité : rien n’est compté');
+  check(invite.ecritures === 0, 'mode invité : rien n’est écrit');
+
+  const e = espace();
+  check(compterMetresPasseport('2026-09-16', 40, e) === 40, 'premiers mètres du jour');
+  check(compterMetresPasseport('2026-09-16', 105, e) === 145, 'les mètres s’additionnent dans la journée');
+  check(compterMetresPasseport('2026-09-16', 5, e) === 150, 'le seuil de 150 m est atteint pas à pas');
+  check(compterMetresPasseport('2026-09-17', 7, e) === 7, 'le compteur repart à zéro le lendemain');
+
+  // Une valeur abîmée ne doit ni lever, ni faire perdre la journée en cours.
+  e.setItem('maze.passeport', '{cassé');
+  check(compterMetresPasseport('2026-09-17', 3, e) === 3, 'compteur illisible : on repart de zéro');
+  e.setItem('maze.passeport', JSON.stringify({ jour: '2026-09-17', metres: 'beaucoup' }));
+  check(compterMetresPasseport('2026-09-17', 3, e) === 3, 'total non entier : on repart de zéro');
+
+  // La boucle appelle le compteur à chaque image : une image sans pas franchi
+  // ne doit pas toucher au stockage.
+  const avant = e.ecritures;
+  const rien = [0, -1, 1.5, NaN].every(m => compterMetresPasseport('2026-09-17', m, e) === null);
+  check(rien && e.ecritures === avant, 'une image sans pas franchi n’écrit rien');
+}
+
+console.log('\npasseport — le profil reste dans l’adresse');
+{
+  const meta = { mode: 'aleatoire', seed: 'oubliette-482', taille: 'moyen', difficulte: 'normal', trace: 'backtracker' };
+  const adresse = search => ({ pathname: '/maze-for-adventurers/', search });
+  const params = url => new URLSearchParams(url.slice(url.indexOf('?') + 1));
+  const avec = writeUrl(meta, adresse('?profil=abcdefgh-1234'));
+  check(params(avec).get('profil') === 'abcdefgh-1234',
+    'une partie lancée avec un passeport garde son profil');
+  check(params(avec).get('graine') === 'oubliette-482', 'la graine partageable est toujours là');
+  check(!writeUrl(meta, adresse('')).includes('profil'), 'sans passeport, aucun profil vide n’apparaît');
+  check(params(writeUrl({ mode: 'campagne' }, adresse('?profil=x'))).get('profil') === 'x',
+    'la campagne aussi garde le profil');
 }
 
 /* ── Interface : aucun bouton orphelin ────────────────────────────────── */

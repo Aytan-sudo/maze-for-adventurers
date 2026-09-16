@@ -310,8 +310,16 @@ export class Ui {
 
     // Les deux commandes se partagent la largeur : chacune en a la moitié,
     // gouttières et écart déduits.
+    //
+    // La bande occupe toute la largeur de l'écran, pas seulement celle de la
+    // scène : rien d'autre n'habite cette rangée. Les mesurer sur la scène
+    // bridait les commandes dès que celle-ci devenait carrée — sur un iPhone SE,
+    // 246 px de scène donnaient des flèches de 34 px là où l'écran en offrait 56.
     const gutter = Math.max(8, Math.min(32, app.width * 0.04));
-    const halfWidth = (rect.width - 2 * gutter - TOUCH_GAP) / 2;
+    const halfWidth = (app.width - 2 * gutter - TOUCH_GAP) / 2;
+    // La surimpression, elle, est posée SUR le labyrinthe : elle reste bornée
+    // par la scène, sous peine de déborder sur les bandes noires.
+    const halfScene = (rect.width - 2 * gutter - TOUCH_GAP) / 2;
 
     // Plafonnée et collée au bas : sur un grand écran, occuper toute la hauteur
     // restante mettrait les boutons au milieu du vide.
@@ -324,8 +332,10 @@ export class Ui {
     let box, pad, margins;
     if (bandPad >= TOUCH_MIN) {
       this.touchLayout = 'bande';
-      box = { left: rect.left, top: app.height - bandHeight, width: rect.width, height: bandHeight };
-      margins = { left: gutter, right: gutter };
+      box = { left: 0, top: app.height - bandHeight, width: app.width, height: bandHeight };
+      // Collée aux bords de l'écran depuis qu'elle en prend toute la largeur,
+      // la bande doit à son tour éviter l'encoche.
+      margins = { left: Math.max(gutter, safe.left), right: Math.max(gutter, safe.right) };
       pad = bandPad;
     } else if (columnPad >= TOUCH_MIN) {
       this.touchLayout = 'colonnes';
@@ -340,7 +350,7 @@ export class Ui {
       box = { left: rect.left, top: rect.top + rect.height - height, width: rect.width, height };
       margins = { left: gutter, right: gutter };
       // Posée sur le labyrinthe, elle reste volontairement discrète.
-      pad = Math.min(height - 10, halfWidth, 180);
+      pad = Math.min(height - 10, halfScene, 180);
     }
 
     this.touch.dataset.layout = this.touchLayout;

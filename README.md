@@ -279,7 +279,12 @@ Maze_For_Adventurers/
     ├── input.js      clavier + commandes tactiles
     ├── audio.js      chargement paresseux, sourdine persistante
     ├── ui.js         panneaux HTML, barre d'outils, D-pad
+    ├── passeport.js  tampon du passeport : mètres du jour, trésor
     └── screens.js    machine à états des écrans
+└── commun/                      ← copie du module du hub, distribuée
+    ├── passeport.js             ← ne pas modifier ici : la source est dans HUB/
+    ├── liaison.js
+    └── passeport.css
 ```
 
 ### Format de grille
@@ -319,6 +324,9 @@ python3 tools/serve-dev.py 8765
 # Publier sur le hub (une fois le dépôt poussé et Pages actif)
 node ~/dev/python/Jeux_Pages/HUB/ajouter-jeu.mjs \
   --desc "…" --tags "…" --emoji "🏛️"
+
+# Redistribuer le module commun du passeport (à lancer depuis le hub)
+cd ~/dev/python/Jeux_Pages/HUB && npm run distribuer
 ```
 
 Dépendances : **Node** (≥ 18, modules ES) et **ffmpeg** pour le ré-encodage
@@ -327,7 +335,50 @@ PNG en Node pur.
 
 ---
 
-## 7. Crédits
+## 7. Le passeport commun — 16 septembre 2026
+
+Le jeu est raccordé au **passeport** du hub : un profil par joueur, gardé dans
+le `localStorage` de `aytan-sudo.github.io`, partagé par tous les jeux de la
+collection. La source du module est dans `HUB/commun/`, et `commun/` n'en est
+qu'une copie distribuée — la modifier ici serait perdu au prochain
+`npm run distribuer`.
+
+**La règle du tampon**, thème *Aventure* : le **trésor trouvé** le donne tout de
+suite ; sinon, ce sont **150 mètres marchés dans la journée**, toutes parties
+confondues, morts comprises. Le mètre est la case franchie — le compteur que la
+barre du bas affiche déjà. Repère de calibrage : le plus court chemin d'un petit
+donjon « Promenade » fait 68 m, celui d'un Moyen/Normal 250 m, et l'on erre
+toujours deux à trois fois plus. Le seuil se change en une ligne, dans
+`HUB/commun/passeport.js` (`questions: 150`).
+
+**Mode invité inchangé.** Sans profil, le jeu écrit là où il a toujours écrit :
+`mfa.muted` dans le `localStorage` de l'appareil, et rien n'est compté. Avec un
+profil, le son et le compteur vont dans l'espace du joueur.
+
+**Ce que le raccordement a demandé au jeu :**
+
+- `js/passeport.js` : le compteur du jour. Les mètres s'accumulent en mémoire et
+  ne sont écrits que tous les 5 pas — au pas de course le héros franchit une case
+  toutes les 130 ms, et le stockage n'a pas à suivre cette cadence. Ils sont
+  déposés aussi dès qu'on quitte le labyrinthe et quand la page passe en
+  arrière-plan, pour que mourir juste avant le seuil ne perde pas les derniers pas.
+- `js/config.js` : `writeUrl` **garde `profil`**. Elle reconstruisait la requête
+  de zéro ; recharger la page aurait changé de joueur.
+- `js/ui.js` : en portrait, la bande des commandes tactiles prend désormais toute
+  la largeur de l'**écran** et non celle de la **scène**. Rien d'autre n'habite
+  cette rangée, et la mesurer sur la scène bridait les flèches dès qu'elle
+  devenait carrée : sur un iPhone SE elles tombaient à 34 px avec le bandeau
+  (41 px sans). Elles font maintenant 56 px, avec ou sans passeport.
+- Le bandeau coûte 44 px en haut de la page. Rien ne défile nulle part, et les
+  commandes tactiles n'en perdent pas un pixel.
+
+**Hors ligne : toujours pas.** Ce jeu est le seul de la collection sans service
+worker, et le raccordement n'en ajoute pas. Le passeport fonctionne en ligne ;
+installé sur l'écran d'accueil, le jeu réclame toujours le réseau.
+
+---
+
+## 8. Crédits
 
 - Programmation et générateur de labyrinthes originaux : **Aymeric Cantais**
 - Musiques : **David Fesliyan**

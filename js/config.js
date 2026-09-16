@@ -136,7 +136,7 @@ export function readUrl(search = location.search) {
 }
 
 /** Écrit la configuration dans l'URL, pour qu'un simple copier-coller la partage. */
-export function writeUrl(meta) {
+export function writeUrl(meta, adresse = location) {
   const p = new URLSearchParams();
   if (meta.mode === 'campagne') {
     p.set('mode', 'campagne');
@@ -146,5 +146,9 @@ export function writeUrl(meta) {
     p.set('difficulte', meta.difficulte);
     if (meta.trace !== DEFAULTS.trace) p.set('trace', meta.trace);
   }
-  return `${location.pathname}?${p}`;
+  // Le passeport voyage dans l'adresse : l'effacer en réécrivant celle-ci ferait
+  // changer de joueur au premier rechargement.
+  const profil = new URLSearchParams(adresse.search).get('profil');
+  if (profil !== null) p.set('profil', profil);
+  return `${adresse.pathname}?${p}`;
 }

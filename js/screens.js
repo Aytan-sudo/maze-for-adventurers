@@ -13,6 +13,7 @@
 
 import { Level, SPEEDS } from './level.js';
 import { Rng } from './rng.js';
+import { noterPasseport } from './passeport.js';
 import {
   STAGE_W, STAGE_H, drawMaze, drawMazeWalls, drawSprite, drawBackdrop, drawText,
   drawBanner, cellCenter, cellSize, applyCamera, zoomFor, SPRITE_SCALE, COLORS,
@@ -46,6 +47,9 @@ export class Game {
   /* ── Transitions ───────────────────────────────────────────────────── */
 
   goto(screen) {
+    // Quitter le labyrinthe dépose les mètres encore en mémoire : mourir juste
+    // avant le seuil ne doit pas perdre les derniers pas.
+    if (this.screen === PLAY && screen !== PLAY) noterPasseport({ deposer: true });
     this.screen = screen;
     this.timer = 0;
 
@@ -131,16 +135,21 @@ export class Game {
           this.goto(PAUSE);
           break;
         }
+        const avant = this.level.hero.traveled;
         const outcome = this.level.update(dt, {
           direction: input.direction,
           slowWalk: input.slowWalk,
         }, this.config.survivalOdds);
+        // Les cases réellement franchies nourrissent le tampon à l'effort.
+        noterPasseport({ metres: this.level.hero.traveled - avant });
 
         if (outcome === 'stairs') {
           this.traveled += this.level.hero.traveled;
           this.loadLevel(this.levelIndex + 1);
         } else if (outcome === 'treasure') {
           this.traveled += this.level.hero.traveled;
+          // Le trésor : la vraie victoire du jeu, tampon immédiat.
+          noterPasseport({ reussite: true });
           this.goto(VICTORY);
         } else if (outcome === 'dead') {
           this.traveled += this.level.hero.traveled;

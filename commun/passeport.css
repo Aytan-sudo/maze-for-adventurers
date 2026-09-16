@@ -1,0 +1,6 @@
+.passeport-ruban { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; padding:0 10px; font:600 12px/1.35 system-ui,sans-serif; color:inherit; }
+.passeport-ruban a { display:inline-flex; align-items:center; min-height:44px; min-width:44px; max-width:65%; color:inherit; text-decoration:none; overflow-wrap:anywhere; }
+.passeport-ruban span { text-align:right; max-width:60%; }
+.passeport-ruban[data-gagne] span { font-weight:800; }
+.passeport-ruban[data-erreur] { background:#fff0d5; color:#563916; flex-wrap:wrap; }
+.passeport-ruban[data-erreur] span { max-width:100%; padding-bottom:6px; text-align:left; }

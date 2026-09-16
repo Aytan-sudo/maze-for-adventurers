@@ -9,6 +9,7 @@ import { AudioPlayer } from './audio.js';
 import { Game, MENU, SETUP, RULES, PLAY, PAUSE } from './screens.js';
 import { originalConfig, randomConfig, readUrl } from './config.js';
 import { Ui, shareUrl } from './ui.js';
+import { noterPasseport } from './passeport.js';
 import * as render from './render.js';
 import { Stage, COLORS, drawText, setViewport } from './render.js';
 
@@ -172,6 +173,15 @@ async function boot() {
     document.getElementById('bar-info').textContent = error;
     console.error(err);
   }
+}
+
+// Un onglet mis en arrière-plan sur iPhone peut ne jamais revenir : les mètres
+// encore en mémoire rejoignent le passeport avant qu'il disparaisse.
+for (const evenement of ['pagehide', 'visibilitychange']) {
+  addEventListener(evenement, () => {
+    if (evenement === 'visibilitychange' && !document.hidden) return;
+    noterPasseport({ deposer: true });
+  });
 }
 
 // ?debug expose l'état interne : indispensable pour diagnostiquer depuis un

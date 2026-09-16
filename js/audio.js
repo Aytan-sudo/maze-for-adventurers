@@ -7,7 +7,15 @@
  * lance à la première touche.
  */
 
+import { espacePasseport } from './passeport.js';
+
 const MUTE_KEY = 'mfa.muted';
+
+/**
+ * Ouvert depuis le hub avec un passeport, le réglage du son suit le joueur ; en
+ * mode invité, il reste celui de l'appareil, comme avant le raccordement.
+ */
+const magasin = () => espacePasseport() ?? localStorage;
 
 export class AudioPlayer {
   constructor(assets) {
@@ -16,7 +24,7 @@ export class AudioPlayer {
     this.current = null;
     this.pending = null;
     this.unlocked = false;
-    this.muted = localStorage.getItem(MUTE_KEY) === '1';
+    this.muted = magasin().getItem(MUTE_KEY) === '1';
   }
 
   element(id) {
@@ -92,7 +100,9 @@ export class AudioPlayer {
 
   setMuted(muted) {
     this.muted = muted;
-    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    // Le passeport refuse d'écrire si le coffre a changé sous nos pieds : il le
+    // signale lui-même, et couper le son ne doit pas interrompre la partie.
+    try { magasin().setItem(MUTE_KEY, muted ? '1' : '0'); } catch { /* signalé par le bandeau */ }
     if (muted) {
       for (const el of this.elements.values()) el.pause();
     } else if (this.current) {
