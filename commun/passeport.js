@@ -1,4 +1,4 @@
-/* Passeport 1.8.0 — source commune, distribuée par scripts/distribuer.mjs.
+/* Passeport 1.9.0 — source commune, distribuée par scripts/distribuer.mjs.
  * Aucun réseau. Une entrée indépendante par profil / jeu / journée évite
  * qu'une partie dans un autre onglet écrase les tampons de son voisin.
  */
@@ -52,7 +52,12 @@
         // Le trésor trouvé, ou cent cinquante mètres marchés dans la journée —
         // le compteur de cases du jeu, cumulé sur toutes les parties, morts
         // comprises. Le plus court chemin d'un petit donjon en fait 68.
-        'maze-for-adventurers': { theme: 'aventure', questions: 150, stockage: 'maze', nom: 'Maze for Adventurers' }
+        'maze-for-adventurers': { theme: 'aventure', questions: 150, stockage: 'maze', nom: 'Maze for Adventurers' },
+        // Un compte trouvé (indices compris), ou dix calculs posés dans la journée.
+        'le-compte-est-bon': { theme: 'nombres', questions: 10, stockage: 'compte-est-bon', nom: 'Le compte est bon' },
+        // Le grade de Butineuse atteint dans une ruche, ou dix mots acceptés dans
+        // la journée — trouvailles rares comprises.
+        'la-ruche': { theme: 'mots', questions: 10, stockage: 'ruche', nom: 'La Ruche' }
     };
     const ESPACES = Object.values(JEUX).map(j => j.stockage);
     // Les clés que chaque jeu écrit en mode invité, rangées par espace : c'est
@@ -78,7 +83,9 @@
             'laser-mirror:theme', 'laser-mirror:stats', 'laser-mirror:current-game'],
         untangle: ['untangle.preferences', 'untangle.partie', 'untangle.statistiques'],
         // Maze ne retient qu'une chose : le son coupé ou non ('1' ou '0').
-        maze: ['mfa.muted']
+        maze: ['mfa.muted'],
+        'compte-est-bon': ['compte-est-bon.preferences', 'compte-est-bon.session', 'compte-est-bon.statistiques'],
+        ruche: ['ruche.preferences', 'ruche.ruches', 'ruche.courante', 'ruche.statistiques']
     };
     const ESPACE_DE_CLE = new Map(Object.entries(ANCIENNES_CLES)
         .flatMap(([espace, cles]) => cles.map(c => [c, espace])));
