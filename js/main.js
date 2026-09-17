@@ -102,7 +102,6 @@ function frame(now) {
 
   if (input.anyInteraction) game.audio.unlock();
   if (input.consume('m')) game.audio.toggleMute();
-  if (input.consume('v')) game.overview = !game.overview;
   while (ui.commands.length) runCommand(ui.commands.shift());
 
   game.showKeyHints = !ui.touchActive(game.screen) && !compact;
@@ -111,7 +110,7 @@ function frame(now) {
   game.draw(ctx, stage.pixelsPerUnit);
   ui.sync(game.screen, {
     muted: game.audio.muted,
-    overview: game.overview,
+    overview: game.wideView,
     zoomable: game.zoomable,
   });
   input.endFrame();

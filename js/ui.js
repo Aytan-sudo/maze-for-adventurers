@@ -258,8 +258,10 @@ export class Ui {
   describeControls() {
     const move = this.panels.rules.querySelector('[data-rules="move"]');
     const slow = this.panels.rules.querySelector('[data-rules="slow"]');
+    const view = this.panels.rules.querySelector('[data-rules="view"]');
     move.textContent = this.hasTouch ? 'La croix directionnelle' : 'Flèches ou ZQSD';
     slow.textContent = this.hasTouch ? 'Le bouton W' : 'W';
+    view.textContent = this.hasTouch ? 'Le bouton Vue' : 'V, maintenue';
   }
 
   place(el, { left, top, width, height }) {

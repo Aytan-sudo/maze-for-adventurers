@@ -5,6 +5,10 @@
  * qu'affiche l'écran de règles. Cela interdit WASD pour se déplacer ; on
  * propose donc ZQSD, qui laisse `W` libre et convient aux claviers AZERTY.
  *
+ * `V` comme « vue » se maintient de la même façon : tant qu'elle est enfoncée,
+ * on voit tout le labyrinthe. Un maintien et non une bascule, parce qu'un
+ * minotaure qui fonce ne laisse pas le temps d'un second appui pour revenir.
+ *
  * On lit `event.key` et non `event.code` : c'est le caractère produit, donc la
  * touche réellement marquée « W » quelle que soit la disposition du clavier.
  */
@@ -57,6 +61,14 @@ export class Input {
     // Le clavier prime : sur une tablette avec clavier, il ne faut pas qu'une
     // bascule tactile oubliée contrarie une touche réellement enfoncée.
     return found ?? this.virtual.direction;
+  }
+
+  /**
+   * Coup d'œil sur tout le labyrinthe, le temps que la touche reste enfoncée.
+   * Qui veut s'y attarder garde le bouton « Vue », lui, une vraie bascule.
+   */
+  get peekView() {
+    return this.held.has('v');
   }
 
   get slowWalk() {

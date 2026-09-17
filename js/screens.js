@@ -42,6 +42,8 @@ export class Game {
     this.showHud = true;
     /** Vue d'ensemble : tout le labyrinthe, au prix de cellules minuscules. */
     this.overview = false;
+    /** Coup d'œil : `X` enfoncée, sans toucher à la bascule ci-dessus. */
+    this.peek = false;
   }
 
   /* ── Transitions ───────────────────────────────────────────────────── */
@@ -111,6 +113,8 @@ export class Game {
 
   update(dt, input) {
     this.timer += dt;
+    // Relu à chaque image : relâcher la touche doit refermer la vue tout seul.
+    this.peek = input.peekView;
 
     switch (this.screen) {
       case MENU:
@@ -243,11 +247,16 @@ export class Game {
     return this.level ? zoomFor(this.level.maze.n) > 1 : false;
   }
 
+  /** Vue large affichée, que ce soit la bascule ou le coup d'œil. */
+  get wideView() {
+    return this.overview || this.peek;
+  }
+
   drawLevel(ctx, pixelsPerUnit) {
     const level = this.level;
     const n = level.maze.n;
     const size = cellSize(n) * SPRITE_SCALE;
-    const zoom = this.overview ? 1 : zoomFor(n);
+    const zoom = this.wideView ? 1 : zoomFor(n);
 
     ctx.save();
     const range = applyCamera(ctx, level.maze, level.hero.fi, level.hero.fj, zoom);
@@ -299,5 +308,17 @@ export class Game {
     drawText(ctx, slow ? 'marche lente' : 'marcher', 34, 330,
       { size: 8, align: 'center', color: slow ? '#8fe388' : '#7d766e' });
     if (!slow) drawText(ctx, 'lentement', 34, 340, { size: 8, align: 'center', color: '#7d766e' });
+
+    // Le rappel de `V` ne sert que sur les grilles qui débordent de l'écran :
+    // ailleurs la vue d'ensemble est déjà ce qu'on regarde.
+    if (!this.zoomable) return;
+    const wide = this.wideView;
+    drawText(ctx, 'V', 445, 316, {
+      size: 15, weight: '700', align: 'center',
+      color: wide ? '#8fe388' : '#4d4842',
+    });
+    const tint = wide ? '#8fe388' : '#7d766e';
+    drawText(ctx, 'vue', 445, 330, { size: 8, align: 'center', color: tint });
+    drawText(ctx, "d'ensemble", 445, 340, { size: 8, align: 'center', color: tint });
   }
 }
